@@ -33,6 +33,21 @@ A source file is evidence of implementation, not by itself evidence of correct b
 | Stock C64, REU, and Ultimate are capability tiers | `README.md`, `docs/roadmap.md`, `docs/hardware-notes.md`, `docs/design/io-trial-protocol.md` | Product intent plus configuration-specific observations. Do not generalize hardware results beyond recorded setups. |
 | Project lineage and retained names | `README.md`, `LICENSE`, `include/breadbin.inc`, build rules in `Makefile` | Product description and current naming. |
 
+
+## Chapter: Your First Session
+
+| Manual claim / exercise | Product-repository evidence | Basis / qualification |
+|---|---|---|
+| `help` displays the installed command summary | `src/bin/help.s`, `rootfs/etc/help` | Implementation and shipped rootfs content. |
+| `pwd`, `ls /`, `cat /etc/motd`, `ls /bin` | `src/bin/pwd.s`, `src/bin/ls.s`, `src/bin/cat.s`, `rootfs/etc/motd`, build rule in `Makefile` | Commands and paths verified against current source and rootfs. |
+| Supplied readme and three-stage pipeline | `rootfs/home/readme`, `src/bin/sh.s`, `src/kernel/file.s`, `tests/test_system.py::Boot.test_05_pipe_three_stages` | The exact example is present in the shipped readme and exercised by a VICE system test. |
+| `cd` changes the shell's working directory | `src/bin/sh.s`, `src/kernel/proc.s`, `tests/test_system.py::Boot.test_07_directories` | `cd` is a shell built-in; cwd is per process. |
+| `>` replaces and `>>` appends | `src/bin/sh.s`, `src/kernel/file.s`, `tests/test_system.py::Boot.test_06_redirect_roundtrip` | Shell opens with create/truncate or create/append; exact round-trip is tested. |
+| `count` prints once per second; background execution | `src/bin/count.s`, `src/bin/sh.s`, `src/kernel/proc.s` | Implementation. `count` sleeps 60 ticks between lines. |
+| `jobs`, `ps`, and `kill PID` | `src/bin/sh.s`, `src/bin/ps.s`, `src/bin/kill.s`, `src/kernel/proc.s`, `tests/test_system.py` | Interface and implementation; kill defaults to SIGTERM. |
+| RUN/STOP interrupts the foreground job | `src/kernel/proc.s`, `tests/test_system.py::Boot.test_13_ctrl_c_blocked_reader`, related foreground Ctrl-C tests | IRQ path and system-test coverage. |
+
+
 ## Review notes
 
 - Re-check the product revision before publishing a release of the manual. This ledger records the revision used during drafting, not a permanent promise about future source.
