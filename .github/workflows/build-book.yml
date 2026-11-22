@@ -26,7 +26,8 @@ jobs:
             latexmk \
             texlive-luatex \
             texlive-latex-extra \
-            texlive-bibtex-extra
+            texlive-bibtex-extra \
+            texlive-plain-generic
 
       - name: Build manual
         run: make pdf
