@@ -1,0 +1,53 @@
+\chapter{Your First Session}
+\label{ch:first-session}
+
+This chapter is a guided tour. Work through it at the Breadbox prompt; each exercise introduces one idea and gives you a way to check what happened.
+
+\section{Meet the prompt}
+After boot and login, try:
+
+\begin{lstlisting}
+help
+pwd
+ls /
+cat /etc/motd
+\end{lstlisting}
+
+The prompt is where commands are entered. \cmd{help} displays the help text installed on the current disk; \cmd{pwd} reports the working directory; \cmd{ls} lists directory entries; and \cmd{cat} writes a file to the screen.
+
+\section{Make a place to work}
+\begin{lstlisting}
+mkdir /home/work
+cd /home/work
+pwd
+\end{lstlisting}
+
+\section{Create and inspect a file}
+\begin{lstlisting}
+echo hello > greeting
+cat greeting
+echo again >> greeting
+cat greeting
+\end{lstlisting}
+
+The first redirection creates or replaces the file. The second appends to it.
+
+\section{Connect programs}
+\begin{lstlisting}
+cat greeting | wc
+\end{lstlisting}
+
+The pipe connects the output of \cmd{cat} to the input of \cmd{wc}. This is not a special built-in text operation: it connects two processes.
+
+\begin{trythis}[Experiment]
+Replace \cmd{cat} with \cmd{echo}, then try piping the output through \cmd{grep}. Change the search word and observe the result.
+\end{trythis}
+
+\section{Start a background job}
+\begin{lstlisting}
+count &
+jobs
+ps
+\end{lstlisting}
+
+The ampersand asks the shell to run the command in the background. The job list and process table show different views of running work. Use RUN/STOP to interrupt the foreground command; use \cmd{kill} when you need to signal a process by PID.

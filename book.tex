@@ -1,0 +1,63 @@
+% Breadbox: The Complete Manual
+% Build with: make
+\documentclass[11pt,oneside,openany]{book}
+
+\input{tex/preamble}
+\input{tex/macros}
+\input{tex/environments}
+
+\makeindex
+\makeglossaries
+\addbibresource{backmatter/references.bib}
+
+\begin{document}
+\frontmatter
+\input{frontmatter/title}
+\input{frontmatter/preface}
+\tableofcontents
+
+\mainmatter
+\part{Getting Started}
+\input{chapters/meet-breadbox}
+\input{chapters/first-session}
+\input{chapters/keyboard}
+
+\part{Using Breadbox}
+\input{chapters/shell}
+\input{chapters/files-and-directories}
+\input{chapters/disks-and-storage}
+\input{chapters/processes}
+\input{chapters/programs-and-tools}
+
+\part{Making Things}
+\input{chapters/worked-projects}
+
+\part{Programming Breadbox}
+\input{chapters/programming-overview}
+\input{chapters/assembly}
+\input{chapters/basic}
+\input{chapters/executable-format}
+\input{chapters/system-interface}
+\input{chapters/modules}
+
+\part{Inside the Machine}
+\input{chapters/boot}
+\input{chapters/memory}
+\input{chapters/kernel}
+\input{chapters/filesystem-internals}
+\input{chapters/iec-and-drives}
+\input{chapters/hardware}
+
+\appendix
+\part{Reference}
+\input{backmatter/command-reference}
+\input{backmatter/configuration-reference}
+\input{backmatter/error-reference}
+\input{backmatter/file-formats}
+\input{backmatter/glossary}
+
+\backmatter
+\printglossary[title={Glossary}]
+\printindex
+\printbibliography[heading=bibintoc,title={References}]
+\end{document}

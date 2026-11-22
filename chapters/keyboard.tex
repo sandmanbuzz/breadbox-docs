@@ -1,0 +1,28 @@
+\chapter{The C64 Keyboard and Screen}
+\label{ch:keyboard}
+
+A C64 keyboard is not a small PC keyboard. Some characters used constantly in shell examples are printed differently, produced with a modifier, or displayed as platform-specific glyphs.
+
+\begin{longtable}{@{}p{0.34\textwidth}p{0.58\textwidth}@{}}
+\toprule
+Character or notation & C64 keyboard action or meaning \\
+\midrule
+\endhead
+\path{|} & SHIFT + minus. This is the shell pipeline operator. \\
+\path{\string^} & The C64 up-arrow glyph occupies the character position used for caret in modern documentation. \\
+\path{\string^O}, \path{\string^X}, \path{\string^K} & Conventional control-key notation: hold CTRL and press the letter. It does not mean type a caret followed by a letter. \\
+\path{\#} & SHIFT + 3. \\
+\path{\_} & The LEFT-ARROW key position. \\
+DEL & Backspace in the shell line editor and \cmd{edit}. \\
+\bottomrule
+\end{longtable}
+
+\section{Shell editing}
+DEL erases the character before the cursor. CTRL-I invokes TAB completion. CTRL-D on an empty command line signals end-of-input. The cursor UP and DOWN keys recall recent command lines.
+
+\section{The full-screen editor}
+Cursor keys move around; HOME goes to the start of the current line; DEL backspaces; RETURN inserts a new line. CTRL-O or F1 saves; CTRL-X or F7 quits; CTRL-K deletes the current line. If there are unsaved changes, quitting requires a second quit command.
+
+\begin{remember}
+The shape of a glyph is not its character code. A symbol that looks like an arrow on the C64 display may be rendered as punctuation in a modern terminal or printed manual.
+\end{remember}

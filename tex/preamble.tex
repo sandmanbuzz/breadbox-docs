@@ -1,0 +1,76 @@
+% Typography, page layout, cross-references, and common packages.
+\usepackage[a4paper,inner=30mm,outer=24mm,top=25mm,bottom=27mm,headheight=15pt]{geometry}
+\usepackage{fontspec}
+\IfFontExistsTF{Libertinus Serif}{%
+  \setmainfont{Libertinus Serif}%
+  \setsansfont{Libertinus Sans}%
+  \setmonofont[Scale=MatchLowercase]{Libertinus Mono}%
+}{%
+  \setmainfont{Latin Modern Roman}%
+  \setsansfont{Latin Modern Sans}%
+  \setmonofont[Scale=MatchLowercase]{Latin Modern Mono}%
+}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{fancyhdr}
+\usepackage{csquotes}
+\usepackage{makeidx}
+\usepackage[acronym,toc,nonumberlist]{glossaries}
+\usepackage[backend=biber,style=alphabetic,sorting=nyt]{biblatex}
+\usepackage[pdfencoding=auto,psdextra]{hyperref}
+\usepackage{bookmark}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+\definecolor{BreadboxBlue}{HTML}{244A68}
+\definecolor{BreadboxInk}{HTML}{20252A}
+\definecolor{BreadboxPale}{HTML}{EEF3F6}
+\definecolor{BreadboxRule}{HTML}{AAB8C2}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=BreadboxBlue,
+  urlcolor=BreadboxBlue,
+  citecolor=BreadboxBlue,
+  pdftitle={Breadbox: The Complete Manual},
+  pdfauthor={The Breadbox Project},
+  pdfsubject={A practical and technical manual for Breadbox on the Commodore 64}
+}
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{2}
+\setlist{nosep}
+\setlength{\parindent}{1.2em}
+\setlength{\parskip}{0.25em}
+\emergencystretch=2em
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[LO]{\nouppercase{\rightmark}}
+\fancyhead[RE]{\nouppercase{\leftmark}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\renewcommand{\chaptermark}[1]{\markboth{\thechapter\quad #1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\quad #1}}
+
+\lstdefinestyle{breadbox}{
+  basicstyle=\ttfamily\small,
+  columns=fullflexible,
+  keepspaces=true,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{BreadboxRule},
+  backgroundcolor=\color{BreadboxPale},
+  xleftmargin=1em,
+  framexleftmargin=0.6em,
+  showstringspaces=false,
+  upquote=true
+}
+\lstset{style=breadbox}

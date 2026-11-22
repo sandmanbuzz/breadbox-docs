@@ -1,0 +1,23 @@
+\chapter{Meet Breadbox}
+\label{ch:meet-breadbox}
+
+\Breadbox{} is a small, Unix-like operating system for the \CeeSixtyFour. It provides a kernel, independent executable programs, a filesystem, a shell, and a preemptive process scheduler. Its purpose is not to imitate a larger computer superficially, but to make the C64 a practical, self-contained programming environment.
+
+\section{A computer with an operating system}
+The shell is not the operating system. It is one program running on top of the kernel. Commands such as \cmd{ls}, \cmd{cat}, and \cmd{grep} are separate programs; the shell starts them, connects their input and output, and manages jobs.
+
+\section{The central ideas}
+\begin{itemize}
+  \item Programs are independent processes.
+  \item Standard input and output allow programs to be composed with pipes and redirection.
+  \item Directories and pathnames organize files.
+  \item The editor, assembler, and BASIC interpreter run on the C64 itself.
+  \item Optional hardware expands storage and performance without being a prerequisite for the core system.
+\end{itemize}
+
+\begin{underhood}
+Breadbox replaces the normal KERNAL at run time and supplies its own interrupt entry, keyboard and screen handling, and serial-bus driver. The running system does not depend on Commodore's KERNAL ROM services.
+\end{underhood}
+
+\section{A note about names}
+The source repository and some on-disk names retain the name \Breadbin. The current boot banner and user-facing system name are Breadbox. They refer to the same project.
