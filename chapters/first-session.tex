@@ -17,9 +17,19 @@ cat /etc/motd
 ls /bin
 \end{lstlisting}
 
-\cmd{help} displays the command summary installed in \path{/etc/help}. It groups commands by purpose and shows the shell operators. \cmd{pwd} prints the current working directory. \cmd{ls /} lists the root directory, and \cmd{cat} copies a file to standard output. The message of the day is deliberately short: it welcomes you and suggests listing \path{/bin} to see the available commands.
+\cmd{help} displays the command summary installed in \path{/etc/help}. It groups commands by purpose and shows the shell operators. \cmd{pwd} prints the current working directory. \cmd{ls /} lists the root directory, and \cmd{cat} copies a file to standard output. The message of the day is deliberately short: it welcomes you and suggests listing \path{/bin} to see the available commands. This is the normal shape of a Breadbox session: initialization prints the message and starts the shell (or the login program when an account database is installed). The shell is the interactive program you are talking to; it is not the whole operating system.
 
-The programs themselves live in \path{/bin}. Try the supplied readme:
+The programs themselves live in \path{/bin}. The other directories have different roles: \path{/etc} holds system configuration and help text, \path{/home} is the place for user files, and \path{/tmp} is the temporary filesystem when an REU is available. You can inspect those areas without changing anything:
+
+\begin{lstlisting}
+ls /etc
+ls /home
+cat /etc/help
+\end{lstlisting}
+
+The help file is worth keeping nearby. It is the command summary installed on this particular system image, so it is a better guide to what is actually present than a list copied from another version of the project.
+
+Try the supplied readme:
 
 \begin{lstlisting}
 cat /home/readme
@@ -27,6 +37,20 @@ cat /home/readme | grep unix | wc
 \end{lstlisting}
 
 The second command is a small but complete example of composition. \cmd{cat} reads the file, \cmd{grep} keeps lines containing \cmd{unix}, and \cmd{wc} counts the resulting lines, words, and bytes. Each program does one job; the shell connects them.
+
+\section{Take a quick inventory}
+
+A couple of commands show how Breadbox sees its storage and running programs:
+
+\begin{lstlisting}
+mount
+df
+ps
+\end{lstlisting}
+
+\cmd{mount} lists the filesystems currently attached to the directory tree. The boot volume is mounted at \path{/}; optional storage may add other entries. \cmd{df} reports filesystem space, including the root filesystem and any mounted filesystems it can query. \cmd{ps} lists the processes that exist at that moment. The exact process list is transient: it changes as commands start, finish, and wait.
+
+These commands answer three different questions: what storage is attached, how much space it has, and what is running. Later chapters return to each view. For now, they are useful orientation tools; there is no need to memorize their output.
 
 \section{Make a place to work}
 
@@ -104,4 +128,6 @@ This short session has exercised several different parts of Breadbox:
   \item Device nodes such as \path{/dev/null} participate in the same input/output interface as files.
 \end{itemize}
 
-The following chapters take these ideas one at a time. \Cref{ch:shell} explains the command language; \Cref{ch:files} covers paths and files; and \Cref{ch:processes} develops the process and job model.
+The following chapters take these ideas one at a time. Start with \Cref{ch:shell} when you want to understand how the command line is parsed, how completion and history work, and how commands are connected. \Cref{ch:files} explains paths, directories, and file operations; \Cref{ch:storage} follows those paths down to disks, REUs, and mounted storage; and \Cref{ch:processes} develops the process and job model. The keyboard chapter collects the C64-specific key notation and editing controls used throughout the examples.
+
+The best way to use this first session is to repeat it on a fresh disk image, then change one thing at a time. Try a different search term, create another file, or run a command with its output redirected. When something surprises you, the relevant chapter should give you a place to investigate rather than asking you to guess.
