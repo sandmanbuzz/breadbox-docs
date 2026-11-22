@@ -24,6 +24,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y \
             latexmk \
+            biber \
             texlive-luatex \
             texlive-latex-extra \
             texlive-bibtex-extra \
