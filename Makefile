@@ -10,7 +10,7 @@ pdf: $(PDF)
 
 $(PDF): $(MAIN) $(shell find chapters frontmatter backmatter tex -type f 2>/dev/null)
 	mkdir -p $(OUT)
-	$(LATEXMK) -lualatex -use-biber -interaction=nonstopmode -halt-on-error -file-line-error -outdir=$(OUT) $(MAIN)
+	$(LATEXMK) -lualatex -interaction=nonstopmode -halt-on-error -file-line-error -outdir=$(OUT) $(MAIN)
 
 view: pdf
 	$(if $(shell command -v xdg-open 2>/dev/null),xdg-open,open) $(PDF)
