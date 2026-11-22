@@ -67,7 +67,7 @@ The vertical bar in that argument is printed; it does not start a pipeline.
 
 Quoted and unquoted pieces can be adjacent within one word. For example, \cmd{echo pre" fix"} passes one argument, \cmd{pre fix}. Quotes do not introduce variable expansion or command substitution. The shell has no general-purpose escape syntax: a backslash is an ordinary character, not a way to escape the next character. Keep quotes balanced, and use quotes when an argument contains spaces or shell operators.
 
-A \path{\#} at the start of a new word begins a comment; the rest of the line is ignored. A \path{\#} inside a word is just a character. For example:
+A \texttt{\#} at the start of a new word begins a comment; the rest of the line is ignored. A \texttt{\#} inside a word is just a character. For example:
 
 \begin{lstlisting}
 echo hello # this part is a comment
@@ -172,14 +172,14 @@ A semicolon separates commands that should run in sequence:
 echo one ; echo two
 \end{lstlisting}
 
-The shell also supports conditional operators. \path{\&\&} runs the next command only if the preceding command succeeded; \path{||} runs the next command only if the preceding command failed:
+The shell also supports conditional operators. \texttt{\&\&} runs the next command only if the preceding command succeeded; \path{||} runs the next command only if the preceding command failed:
 
 \begin{lstlisting}
 cat /etc/help && echo help-is-readable
 cat /no-such-file || echo could-not-read-file
 \end{lstlisting}
 
-These operators test the exit status of the preceding command. Breadbox represents success with status zero and failure with a nonzero status. The special word \path{\$?} expands to the status of the last command:
+These operators test the exit status of the preceding command. Breadbox represents success with status zero and failure with a nonzero status. The special word \texttt{\$?} expands to the status of the last command:
 
 \begin{lstlisting}
 cat /etc/help
@@ -188,11 +188,11 @@ cat /no-such-file
 echo $?
 \end{lstlisting}
 
-Use the status immediately if you want to inspect a command's result: the next command changes it. The shell's conditional operators and \path{\$?} are useful for simple scripts as well as interactive work.
+Use the status immediately if you want to inspect a command's result: the next command changes it. The shell's conditional operators and \texttt{\$?} are useful for simple scripts as well as interactive work.
 
 \section{Background jobs}
 
-Normally, the shell waits for a command or pipeline to finish before showing another prompt. Put \path{\&} at the end of a command to start it in the background:
+Normally, the shell waits for a command or pipeline to finish before showing another prompt. Put \texttt{\&} at the end of a command to start it in the background:
 
 \begin{lstlisting}
 count > /dev/null &
@@ -227,7 +227,7 @@ The shell performs several distinct steps:
   \item It waits for foreground work, or returns to the prompt for background work.
 \end{enumerate}
 
-The shell is intentionally small. Its command language includes words, single- and double-quoted text, comments, \path{*} and \path{?} patterns, \path{\$?}, pipes, redirection, sequencing, conditional execution, and background jobs. It does not provide shell variables, environment-variable expansion, command substitution, arithmetic expansion, parentheses, or a general escape syntax. There is no separate standard-error redirection operator.
+The shell is intentionally small. Its command language includes words, single- and double-quoted text, comments, \path{*} and \path{?} patterns, \texttt{\$?}, pipes, redirection, sequencing, conditional execution, and background jobs. It does not provide shell variables, environment-variable expansion, command substitution, arithmetic expansion, parentheses, or a general escape syntax. There is no separate standard-error redirection operator.
 
 Some implementation limits are visible when a command becomes unusually large: an input line can contain at most 127 characters; the tokenizer holds at most 32 tokens; and a command can have at most 16 argument-vector entries, including the command name. These are limits of the current implementation, not goals for how commands should normally be written.
 
