@@ -1,3 +1,250 @@
 \chapter{The Shell}
 \label{ch:shell}
-\todo{Expand from verified shell behavior: grammar, quoting, expansion, pipelines, redirection, sequencing, background jobs, history, completion, and error cases.}
+
+The shell is the program that reads your command line and turns it into work for Breadbox. It is not the kernel, and most commands are not built into it. The shell recognizes a small command language, starts programs, and arranges their input and output. Once you understand that division, the shell becomes much less mysterious: a command is a program to run, and the punctuation around it tells the shell how to run it.
+
+This chapter is both a practical guide and a description of the language implemented by the current Breadbox shell. It deliberately describes Breadbox rather than assuming that every convention from a larger Unix shell is available.
+
+\section{A first command line}
+
+At the prompt, type a command name followed by any arguments:
+
+\begin{lstlisting}
+pwd
+ls /bin
+cat /etc/help
+\end{lstlisting}
+
+The first word names the program. The remaining words are its arguments. Breadbox normally looks for a command in \path{/bin}; if the command name contains a slash, the shell treats it as a path instead.
+
+\begin{lstlisting}
+ls /home
+/home/work
+\end{lstlisting}
+
+The shell prompt shows the current working directory. A relative path such as \path{notes.txt} is interpreted from that directory; an absolute path such as \path{/home/notes.txt} starts at the root. The shell does not need to understand what a program's arguments mean. It passes them to the program, which decides how to interpret them.
+
+\section{Editing a command}
+
+When the shell is reading from the C64 console, it uses its own line editor. You can correct a command before pressing RETURN:
+
+\begin{itemize}
+  \item DEL removes the character to the left of the cursor (the end of the line).
+  \item CTRL-D on an empty line ends the shell's input. If the line is not empty, it does nothing.
+  \item TAB (CTRL-I) completes a command name or file name.
+  \item UP-ARROW and DOWN-ARROW move through the recent command history.
+\end{itemize}
+
+The history holds the four most recent non-empty lines in the current shell. It is a small convenience, not a persistent command log: starting another shell starts another history.
+
+Try typing \cmd{whoa} and pressing TAB. The shell can complete it to \cmd{whoami}; press RETURN to run it. For a file name, begin with a directory:
+
+\begin{lstlisting}
+cat /etc/hel
+\end{lstlisting}
+
+Press TAB to complete the name. If more than one name matches, the shell inserts the part common to all matches. Press TAB again to list the possible matches, then type enough additional characters to distinguish the one you want. A directory completion adds a slash. If nothing matches, the line is left unchanged.
+
+Completion is a convenience layered over the same name lookup used by wildcard expansion. In command position it searches \path{/bin}; elsewhere it completes file names. If the word already contains \path{*} or \path{?}, completion leaves it alone.
+
+\section{Arguments and quotes}
+
+Spaces and tabs separate words. If an argument needs to contain spaces, put it in single or double quotes:
+
+\begin{lstlisting}
+echo hello world
+echo "hello world"
+echo 'hello world'
+\end{lstlisting}
+
+The first command passes two arguments after the command name; the other two pass one. The quote marks group the text and are not part of the argument. Single and double quotes have the same grouping role in this shell. A quoted operator is ordinary text, not shell punctuation:
+
+\begin{lstlisting}
+echo "one | two"
+\end{lstlisting}
+
+The vertical bar in that argument is printed; it does not start a pipeline.
+
+Quoted and unquoted pieces can be adjacent within one word. For example, \cmd{echo pre" fix"} passes one argument, \cmd{pre fix}. Quotes do not introduce variable expansion or command substitution. The shell has no general-purpose escape syntax: a backslash is an ordinary character, not a way to escape the next character. Keep quotes balanced, and use quotes when an argument contains spaces or shell operators.
+
+A \path{\#} at the start of a new word begins a comment; the rest of the line is ignored. A \path{\#} inside a word is just a character. For example:
+
+\begin{lstlisting}
+echo hello # this part is a comment
+echo file#1
+\end{lstlisting}
+
+\section{Finding files with wildcards}
+
+The shell expands \path{*} and \path{?} in words before starting a program. An asterisk matches any sequence of characters; a question mark matches one character:
+
+\begin{lstlisting}
+ls /bin/sh*
+echo /home/*.bas
+echo /bin/s?
+\end{lstlisting}
+
+The pattern is matched against entries in the directory named by the path prefix. A pattern without a slash is matched in the current directory. Names beginning with a dot are included only when the pattern itself begins with a dot.
+
+If a pattern matches nothing, the shell passes the original pattern to the program unchanged. This is intentional: an unmatched pattern is not silently removed.
+
+\begin{trythis}[Experiment]
+Try \cmd{echo /bin/s?}, then \cmd{echo /bin/no-such-command*}. The first should expand to the matching name or names in your image; the second should print the pattern unchanged if there is no match.
+\end{trythis}
+
+\section{Commands, built-ins, and scripts}
+
+Most commands are separate executable files. When you type \cmd{ls}, the shell loads \path{/bin/ls}; when you type \cmd{grep}, it loads \path{/bin/grep}. A command can also be given by its path:
+
+\begin{lstlisting}
+ /bin/ls /home
+\end{lstlisting}
+
+The shell has a small number of built-ins:
+
+\begin{itemize}
+  \item \cmd{cd} changes the shell's current working directory.
+  \item \cmd{jobs} lists background children known to this shell.
+  \item \cmd{kill} sends a signal to one or more process IDs.
+  \item \cmd{exit} leaves the shell.
+\end{itemize}
+
+These are built in for practical reasons. In particular, a separate \cmd{cd} program could change its own working directory, but that would not change the directory of the shell waiting for your next command. \cmd{kill} is built in so it can still send signals when the process table is full and there is no free slot in which to start \path{/bin/kill}.
+
+A shell can read commands from a file instead of the console:
+
+\begin{lstlisting}
+sh /home/example.sh
+\end{lstlisting}
+
+In this mode the shell reads lines from the file. It does not display an interactive prompt or use the console line editor. The script uses the same command language described in this chapter.
+
+\section{Connecting input and output}
+
+Every external command has a standard input and standard output. By default, these are connected to the console. Redirection changes one of those connections.
+
+Use \path{>} to create or replace a file with a command's output:
+
+\begin{lstlisting}
+echo first > /home/notes
+cat /home/notes
+\end{lstlisting}
+
+Use \path{>>} to append output without replacing what is already there:
+
+\begin{lstlisting}
+echo second >> /home/notes
+cat /home/notes
+\end{lstlisting}
+
+Use \path{<} to take a command's input from a file:
+
+\begin{lstlisting}
+wc < /home/notes
+\end{lstlisting}
+
+Redirection belongs to the command line, not to the program. \cmd{wc} reads from its standard input in either case; the shell arranges where that input comes from.
+
+\section{Pipelines}
+
+A pipeline connects the standard output of one command to the standard input of the next. The shell operator is the vertical bar, entered on a C64 with SHIFT and the minus key:
+
+\begin{lstlisting}
+cat /home/readme | grep unix | wc
+\end{lstlisting}
+
+Read this from left to right. \cmd{cat} writes the file; \cmd{grep} reads those bytes and writes matching lines; \cmd{wc} reads the selected lines and counts them. None of the three programs needs a special pipeline mode.
+
+A pipeline can have several stages. The shell creates a pipe between adjacent stages and starts each program with the appropriate input and output descriptors. The pipe is a kernel-managed buffer, not a temporary file. If a reader has no data yet, it waits; if the buffer fills, the writer waits. If every reader closes its end while a writer is still producing output, the writer receives the broken-pipe signal.
+
+Redirection can be combined with a pipeline. For example, the first command can read from a file while the last command writes to another:
+
+\begin{lstlisting}
+grep breadbox < /etc/help | wc > /home/counts
+cat /home/counts
+\end{lstlisting}
+
+\section{Sequencing and conditional commands}
+
+A semicolon separates commands that should run in sequence:
+
+\begin{lstlisting}
+echo one ; echo two
+\end{lstlisting}
+
+The shell also supports conditional operators. \path{\&\&} runs the next command only if the preceding command succeeded; \path{||} runs the next command only if the preceding command failed:
+
+\begin{lstlisting}
+cat /etc/help && echo help-is-readable
+cat /no-such-file || echo could-not-read-file
+\end{lstlisting}
+
+These operators test the exit status of the preceding command. Breadbox represents success with status zero and failure with a nonzero status. The special word \path{\$?} expands to the status of the last command:
+
+\begin{lstlisting}
+cat /etc/help
+echo $?
+cat /no-such-file
+echo $?
+\end{lstlisting}
+
+Use the status immediately if you want to inspect a command's result: the next command changes it. The shell's conditional operators and \path{\$?} are useful for simple scripts as well as interactive work.
+
+\section{Background jobs}
+
+Normally, the shell waits for a command or pipeline to finish before showing another prompt. Put \path{\&} at the end of a command to start it in the background:
+
+\begin{lstlisting}
+count > /dev/null &
+jobs
+ps
+\end{lstlisting}
+
+The shell prints the process ID of the background command. \cmd{jobs} shows background children belonging to this shell; \cmd{ps} shows the system process table. They answer different questions, so use whichever view you need.
+
+You can signal a process by its ID:
+
+\begin{lstlisting}
+kill 7
+\end{lstlisting}
+
+Here, \cmd{7} is only an example: use the ID actually printed by your shell. With no signal number, \cmd{kill} sends the normal termination signal. When a background process exits, the shell notices and reports its completion at a later prompt.
+
+RUN/STOP is different from \cmd{kill}. It interrupts the foreground job; it is not a general way to select an arbitrary background process. Use \cmd{kill} when you need to name a process explicitly.
+
+The C64 has limited memory and Breadbox has a fixed process table. Background jobs are useful, but each one occupies a process slot and memory while it exists. The current kernel has eight process slots shared by system processes and commands. If the table is full, another command cannot be started until a slot becomes available.
+
+\section{How the command line is interpreted}
+
+The shell performs several distinct steps:
+
+\begin{enumerate}
+  \item It reads a line, either from the interactive console editor or from a script file.
+  \item It splits the line into words and operators. Quotes group text into a word and are removed.
+  \item It recognizes wildcard patterns and expands matching file names.
+  \item It identifies pipelines, redirections, sequencing, conditional operators, and background markers.
+  \item It runs a built-in when the command is a single simple built-in command; otherwise it asks the kernel to load and start an executable.
+  \item It waits for foreground work, or returns to the prompt for background work.
+\end{enumerate}
+
+The shell is intentionally small. Its command language includes words, single- and double-quoted text, comments, \path{*} and \path{?} patterns, \path{\$?}, pipes, redirection, sequencing, conditional execution, and background jobs. It does not provide shell variables, environment-variable expansion, command substitution, arithmetic expansion, parentheses, or a general escape syntax. There is no separate standard-error redirection operator.
+
+Some implementation limits are visible when a command becomes unusually large: an input line can contain at most 127 characters; the tokenizer holds at most 32 tokens; and a command can have at most 16 argument-vector entries, including the command name. These are limits of the current implementation, not goals for how commands should normally be written.
+
+\section{A small shell-language exercise}
+
+The following sequence uses only the supplied commands and files. It creates a report, checks whether it contains a word, and chooses a message based on the result:
+
+\begin{lstlisting}
+grep breadbox < /etc/help > /home/report
+cat /home/report
+grep unix /home/report && echo found-unix
+grep missing-word /home/report || echo no-match
+echo $?
+\end{lstlisting}
+
+Change the search words and observe which branch runs. Then replace the final \cmd{echo} with a different command to see how quickly the last-command status changes.
+
+\section{Where to go next}
+
+The shell is the traffic director, not the source of every behavior a command exhibits. \Cref{ch:files} explains the filesystem operations that redirection and wildcard expansion rely on. \Cref{ch:processes} explains process creation, scheduling, signals, and waiting. The programming chapters show how a program receives its arguments and standard streams. When a command behaves unexpectedly, first ask whether the behavior belongs to the shell, the program, or the kernel; that question is often half the diagnosis.
