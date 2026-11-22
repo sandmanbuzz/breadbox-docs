@@ -21,10 +21,11 @@ A source file is evidence of implementation, not by itself evidence of correct b
 |---|---|---|
 | Shell is a program; external commands are separate programs | `src/bin/sh.s`, `src/bin/*.s`, `src/kernel/exec.s` | Implementation. Shell comments document command syntax and built-ins; loader handles CX images. |
 | Pipes connect process streams; readers/writers block | `src/kernel/file.s`, `src/kernel/proc.s`, `tests/test_system.py` (pipe tests), `docs/testing.md` | Implementation plus system-test coverage. |
-| Background jobs and process scheduling | `src/bin/sh.s`, `src/kernel/proc.s`, `src/kernel/k.inc` | Implementation. `MAXPROC=8`, `SLICE=3`; timer IRQ and scheduler are in `proc.s`. |
+| Background jobs and process scheduling | `src/bin/sh.s`, `src/kernel/proc.s`, `src/kernel/k.inc` | Implementation. `MAXPROC=8`, `SLICE=3`; timer IRQ and scheduler are in `proc.s`. The eight slots are shared by all processes, not reserved for background jobs. |
 | RUN/STOP signals the foreground process; `kill` signals by PID | `src/kernel/proc.s`, `src/bin/sh.s`, `src/bin/kill.s`, `tests/test_system.py` | Implementation and test coverage; RUN/STOP path is handled in the IRQ code. |
 | c64fs has inodes, directories, block bitmap, format version 2 | `src/kernel/fs.s`, `src/kernel/k.inc`, `docs/filesystem.md` | Implementation. The on-disk magic is `C64F2`; version constant is 2. |
 | Boot disk is hybrid: CBM DOS boot directory plus c64fs sectors | `README.md`, `tools/mkimage.py`, `src/kernel/fs.s`, `src/kernel/blk.s` | Product description and image/driver implementation. |
+| Paths abstract over mounted storage, while volume capabilities remain distinct | `src/kernel/fs.s`, `src/kernel/file.s`, `src/kernel/blk.s`, `src/mod/cbm.s`, `src/mod/d81.s`, `src/mod/uci.s` | Implementation. Mount points attach devices to the path namespace; CBM DOS remains a flat directory and is not executable storage. |
 | Ordinary CBM DOS disks, c64fs on 1581 media, and Ultimate storage use distinct backends/modules | `src/kernel/fs.s`, `src/kernel/file.s`, `src/mod/cbm.s`, `src/mod/d81.s`, `src/mod/uci.s`, `docs/design/next/uci-v1.md` | Important boundary: `d81.km` adds 1581 geometry for c64fs volumes; its source explicitly says CBM DOS disks on a 1581 are not handled. Hardware claims require trial records. |
 | CX loader allocates, relocates, and starts programs | `src/kernel/exec.s`, `tools/cx.py`, `include/breadbin.inc` | Implementation. |
 | On-machine editor, BASIC, assembler; host-side C-subset compiler and p-code VM | `src/bin/edit.s`, `src/bin/basic.s`, `src/bin/as.s`, `tools/cc.py`, `src/pvm/`, `docs/design/pvm.md` | Implementation; compiler host/on-target distinction matters. |
@@ -44,6 +45,8 @@ A source file is evidence of implementation, not by itself evidence of correct b
 | `cd` changes the shell's working directory | `src/bin/sh.s`, `src/kernel/proc.s`, `tests/test_system.py::Boot.test_07_directories` | `cd` is a shell built-in; cwd is per process. |
 | `>` replaces and `>>` appends | `src/bin/sh.s`, `src/kernel/file.s`, `tests/test_system.py::Boot.test_06_redirect_roundtrip` | Shell opens with create/truncate or create/append; exact round-trip is tested. |
 | `count` prints once per second; background execution | `src/bin/count.s`, `src/bin/sh.s`, `src/kernel/proc.s` | Implementation. `count` sleeps 60 ticks between lines. |
+| The installed help text is a system-image inventory | `rootfs/etc/help`, `src/bin/help.s` | Shipped rootfs content and command implementation. |
+| `mount`, `df`, and `ps` provide storage/process inventory | `src/bin/mount.s`, `src/bin/df.s`, `src/bin/ps.s`, kernel mount/process info syscalls | Implementation. Output is live system state and should not be quoted as fixed output. |
 | `jobs`, `ps`, and `kill PID` | `src/bin/sh.s`, `src/bin/ps.s`, `src/bin/kill.s`, `src/kernel/proc.s`, `tests/test_system.py` | Interface and implementation; kill defaults to SIGTERM. |
 | RUN/STOP interrupts the foreground job | `src/kernel/proc.s`, `tests/test_system.py::Boot.test_13_ctrl_c_blocked_reader`, related foreground Ctrl-C tests | IRQ path and system-test coverage. |
 
@@ -64,3 +67,12 @@ A source file is evidence of implementation, not by itself evidence of correct b
 | DEL backspaces in the shell line editor | `src/bin/sh.s` | `readline` handles `K_DEL` by reducing the input-line length and emitting DEL. |
 | DEL backspaces in the full-screen editor; CTRL-O saves, CTRL-X quits, CTRL-K deletes a line | `src/bin/edit.s` | Key dispatch compares the decoded control values and key constants; behavior is implemented in the editor. |
 | The C64 up-arrow and left-arrow occupy character positions represented as caret and underscore in modern notation | `src/kernel/keytab.inc` | The unshifted decode table labels the positions UP-ARROW and LEFT-ARROW; the printed manual uses modern typographic stand-ins, not literal C64 glyph artwork. |
+
+## Introductory expansion notes
+
+| Manual claim / orientation | Product-repository evidence | Basis / qualification |
+|---|---|---|
+| Initialization displays the message of the day and starts login or the shell | `src/bin/init.s`, `rootfs/etc/motd`, `rootfs/etc/passwd` | Implementation. The login path is conditional on the passwd file existing. |
+| `/etc`, `/home`, and `/tmp` have distinct roles in the supplied image | `rootfs/etc/help`, `rootfs/home/readme`, rootfs image construction, `src/kernel/main.s` | Shipped content and implementation. `/tmp` as REU storage is conditional on REU availability. |
+| The first-session inventory commands are available | `rootfs/etc/help`, `src/bin/mount.s`, `src/bin/df.s`, `src/bin/ps.s` | Shipped command summary and implementations. Their output depends on current mounts and running processes. |
+| Process slots are a shared system limit, not a background-job quota | `src/kernel/k.inc`, `src/kernel/proc.s`, `src/kernel/exec.s` | Implementation. `MAXPROC=8`; shell, init, and external commands all use the process table. |
