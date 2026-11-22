@@ -27,7 +27,7 @@ Breadbox presents a hierarchical filesystem. Paths begin at \path{/}; directorie
 
 The native filesystem is called c64fs. It uses inodes, directories, and a block bitmap, and its current on-disk format is version~2. The boot disk is a hybrid: its ordinary Commodore DOS directory contains the boot program, while the Breadbox filesystem occupies raw sectors elsewhere on the disk. This arrangement lets a C64 load the boot program in the familiar way while Breadbox uses its own filesystem after the kernel starts.
 
-The system can also work with ordinary CBM DOS disks. Those volumes are presented as a flat directory rather than being mistaken for c64fs. A 1581-format volume is supported by a loadable filesystem module. On supported Ultimate hardware, UCI exposes the machine's file storage through a mounted filesystem as well.
+The system can also work with ordinary CBM DOS disks. Those volumes are presented as a flat directory rather than being mistaken for c64fs. A loadable geometry module supports c64fs volumes on 1581-format disks; it does not make an ordinary CBM DOS disk on a 1581 mountable. On supported Ultimate hardware, UCI exposes the machine's file storage through a mounted filesystem as well.
 
 \begin{underhood}
 The filesystem code is in the kernel, not in the shell. Path lookup, inode handling, block mapping, and directory operations are implemented in the kernel filesystem layer. The file layer adds descriptors, shared open-file state, pipes, and device nodes. The CBM DOS, 1581, and Ultimate interfaces fit behind that common file interface, but they do not all have identical capabilities or persistence rules.
