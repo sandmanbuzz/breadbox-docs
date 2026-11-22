@@ -27,13 +27,13 @@ This is a small system, not an unlimited pool of processes. The current kernel s
 
 \section{Files, paths, and devices}
 
-Breadbox presents a hierarchical filesystem. Paths begin at \path{/}; directories can contain files and other directories; and the shell maintains a current working directory. Programs use the same file interface whether a path refers to the boot volume, a mounted disk, or a device node.
+Breadbox presents a hierarchical filesystem. Paths begin at \\\path{/}; directories can contain files and other directories; and the shell maintains a current working directory. Programs use the same file interface whether a path refers to the boot volume, a mounted disk, or a device node.
 
 The native filesystem is called c64fs. It uses inodes, directories, and a block bitmap, and its current on-disk format is version~2. The boot disk is a hybrid: its ordinary Commodore DOS directory contains the boot program, while the Breadbox filesystem occupies raw sectors elsewhere on the disk. This arrangement lets a C64 load the boot program in the familiar way while Breadbox uses its own filesystem after the kernel starts.
 
 The system can also work with ordinary CBM DOS disks. Those volumes are presented as a flat directory rather than being mistaken for c64fs. A loadable geometry module supports c64fs volumes on 1581-format disks; it does not make an ordinary CBM DOS disk on a 1581 mountable. On supported Ultimate hardware, UCI exposes the machine's file storage through a mounted filesystem as well.
 
-The important idea is that a path describes where a file is in the system's namespace; it does not tell you what physical medium stores it. The boot disk appears at path{/}, an available REU is mounted at path{/tmp}, and other volumes can be attached at directories chosen as mount points. Once mounted, programs use the same path and file operations to reach them. The underlying volume types still matter, however: a CBM DOS disk is a useful exchange medium, but it does not acquire c64fs directories or become a place from which Breadbox can launch programs.
+The important idea is that a path describes where a file is in the system's namespace; it does not tell you what physical medium stores it. The boot disk appears at path{/}, an available REU is mounted at \\path{/tmp}, and other volumes can be attached at directories chosen as mount points. Once mounted, programs use the same path and file operations to reach them. The underlying volume types still matter, however: a CBM DOS disk is a useful exchange medium, but it does not acquire c64fs directories or become a place from which Breadbox can launch programs.
 
 \begin{underhood}
 The filesystem code is in the kernel, not in the shell. Path lookup, inode handling, block mapping, and directory operations are implemented in the kernel filesystem layer. The file layer adds descriptors, shared open-file state, pipes, and device nodes. The CBM DOS, 1581, and Ultimate interfaces fit behind that common file interface, but they do not all have identical capabilities or persistence rules.
