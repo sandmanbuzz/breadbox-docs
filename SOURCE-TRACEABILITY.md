@@ -76,3 +76,21 @@ A source file is evidence of implementation, not by itself evidence of correct b
 | `/etc`, `/home`, and `/tmp` have distinct roles in the supplied image | `rootfs/etc/help`, `rootfs/home/readme`, rootfs image construction, `src/kernel/main.s` | Shipped content and implementation. `/tmp` as REU storage is conditional on REU availability. |
 | The first-session inventory commands are available | `rootfs/etc/help`, `src/bin/mount.s`, `src/bin/df.s`, `src/bin/ps.s` | Shipped command summary and implementations. Their output depends on current mounts and running processes. |
 | Process slots are a shared system limit, not a background-job quota | `src/kernel/k.inc`, `src/kernel/proc.s`, `src/kernel/exec.s` | Implementation. `MAXPROC=8`; shell, init, and external commands all use the process table. |
+
+## Chapter: The Shell
+
+| Manual claim / tutorial exercise | Product-repository evidence | Basis / qualification |
+|---|---|---|
+| Command lookup uses `/bin` unless the command name contains a slash | `src/bin/sh.s` (`make_path`) | Implementation. |
+| Console line editing supports DEL, CTRL-D on an empty line, TAB completion, and UP/DOWN history | `src/bin/sh.s` (`readline`, `complete`, `hsave`, `hshow`), `tests/test_system.py::Readline` | Implementation and VICE system tests. History is a four-entry in-memory ring per shell. |
+| TAB completion completes command names in `/bin`, file names elsewhere, common prefixes, and lists ambiguous matches | `src/bin/sh.s` (`complete`, `glob`), `tests/test_system.py::Readline` | Implementation and system tests for command completion, post-pipe completion, directory slash, ambiguous matches, no-match behavior, and existing patterns. |
+| Single and double quotes group text; shell operators inside quotes are literal | `src/bin/sh.s` (`tokenize`), `tests/test_system.py::Boot.test_18_basic_pipe` | Implementation. Both quote characters use the same grouping logic; there is no backslash escape processing. |
+| `#` begins a comment at the start of a new token | `src/bin/sh.s` (`tokenize`) | Implementation. A hash within an already-started word is ordinary text. |
+| `*` and `?` expand against directory entries; unmatched patterns remain literal; dot names require a leading-dot pattern | `src/bin/sh.s` (`is_glob`, `glob`, `match`), `tests/test_system.py::Boot.test_23_wildcards_and_jobs` | Implementation and VICE tests for wildcard expansion and unmatched patterns. |
+| Built-ins are `cd`, `jobs`, `kill`, and `exit`; scripts run with `sh file` | `src/bin/sh.s` (`builtin`, startup argument handling) | Implementation. Built-ins execute in the shell process and are not ordinary pipeline stages. |
+| `<`, `>`, and `>>` connect standard input/output to files | `src/bin/sh.s` (`run_cmd`), `src/kernel/file.s`, `tests/test_system.py::Boot.test_06_redirect_roundtrip` | Implementation and system test for replace/append output redirection. Input redirection is implemented in the same parser/execution path. |
+| `|` creates pipelines; pipe readers/writers block and broken readers signal writers | `src/bin/sh.s`, `src/kernel/file.s`, `src/kernel/proc.s`, `tests/test_system.py::Boot.test_05_pipe_three_stages`, `Boot.test_11_head_pipe_early_exit`, `Boot.test_12_sigpipe` | Implementation and VICE system tests. |
+| `;`, `&&`, and `||` sequence or conditionally execute commands; `$?` expands the previous status | `src/bin/sh.s` (`run_line`, `T_DOLLAR`), `tests/test_system.py::ShellOperators` | Implementation and VICE tests for both conditional operators, chained conditions, and success/failure status expansion. |
+| Trailing `&` starts a background command; `jobs` lists shell children and `ps` lists system processes | `src/bin/sh.s`, `src/bin/ps.s`, `src/kernel/proc.s`, `tests/test_system.py::Boot.test_08_background_and_kill`, `Boot.test_21_many_sleepers_stay_responsive` | Implementation and system tests. |
+| Shell limits are 127 input characters, 32 tokens, and 16 argument-vector entries | `src/bin/sh.s` (`LINEMAX`, `MAXTOK`, `MAXARG`) | Current implementation constants; not a general system-wide limit. |
+| There is no variable expansion beyond `$?`, command substitution, arithmetic expansion, or backslash escaping | `src/bin/sh.s` tokenizer and expansion logic | Negative capability claim derived from the complete current shell parser; re-check when the grammar changes. |
