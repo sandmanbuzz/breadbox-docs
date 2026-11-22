@@ -1,23 +1,70 @@
 \chapter{Meet Breadbox}
 \label{ch:meet-breadbox}
 
-\Breadbox{} is a small, Unix-like operating system for the \CeeSixtyFour. It provides a kernel, independent executable programs, a filesystem, a shell, and a preemptive process scheduler. Its purpose is not to imitate a larger computer superficially, but to make the C64 a practical, self-contained programming environment.
+\Breadbox{} is a small, Unix-like operating system for the Commodore~64. It turns the machine into a self-contained environment for running programs, organizing files, and writing new software. The system is deliberately built around the constraints of the C64: a 6510 processor, a small address space, serial disk drives, and optional memory and storage expansions.
+
+This is not a desktop operating system squeezed into an emulator, nor a BASIC program that imitates a command prompt. Breadbox has a kernel, independently loaded programs, a filesystem, and a scheduler. The command line is the place where these pieces meet.
 
 \section{A computer with an operating system}
-The shell is not the operating system. It is one program running on top of the kernel. Commands such as \cmd{ls}, \cmd{cat}, and \cmd{grep} are separate programs; the shell starts them, connects their input and output, and manages jobs.
 
-\section{The central ideas}
-\begin{itemize}
-  \item Programs are independent processes.
-  \item Standard input and output allow programs to be composed with pipes and redirection.
-  \item Directories and pathnames organize files.
-  \item The editor, assembler, and BASIC interpreter run on the C64 itself.
-  \item Optional hardware expands storage and performance without being a prerequisite for the core system.
-\end{itemize}
+When the machine has booted, you interact with a shell. It is tempting to think of the shell as the operating system, but it is only one program running under the kernel.
+
+The distinction matters. The shell reads a command line, interprets operators such as \path{|} and \path{>}, and asks the kernel to start programs and connect their input and output. Commands such as \cmd{ls}, \cmd{cat}, and \cmd{grep} are separate executable files. The kernel loads them, gives each process its own execution context, and provides the system calls through which they read files, write output, wait, and exit.
+
+That division gives the system a useful property: a command does not need to know whether its input comes from the keyboard, a file, or another program. It reads from its standard input and writes to its standard output. The shell can connect those streams without changing the programs themselves.
+
+\begin{lstlisting}
+cat /home/readme | grep unix | wc
+\end{lstlisting}
+
+This pipeline runs three programs. The output of \cmd{cat} becomes the input of \cmd{grep}; the output of \cmd{grep} becomes the input of \cmd{wc}. The pipe is a kernel-managed buffer, not a temporary file and not a special feature built into those commands. If a pipe is empty, its reader waits; if it is full, its writer waits. Closing the read end while a writer is still writing produces the usual broken-pipe condition, \cmd{SIGPIPE}.
+
+The same separation applies to background work. A command followed by \path{\&} can continue while the shell accepts another command. The kernel's timer interrupt drives a round-robin scheduler, and the shell can ask the kernel for process and job information. RUN/STOP is delivered as an interrupt signal to the foreground job; \cmd{kill} can signal a process by its process ID.
+
+\section{Files, paths, and devices}
+
+Breadbox presents a hierarchical filesystem. Paths begin at \path{/}; directories can contain files and other directories; and the shell maintains a current working directory. Programs use the same file interface whether a path refers to the boot volume, a mounted disk, or a device node.
+
+The native filesystem is called c64fs. It uses inodes, directories, and a block bitmap, and its current on-disk format is version~2. The boot disk is a hybrid: its ordinary Commodore DOS directory contains the boot program, while the Breadbox filesystem occupies raw sectors elsewhere on the disk. This arrangement lets a C64 load the boot program in the familiar way while Breadbox uses its own filesystem after the kernel starts.
+
+The system can also work with ordinary CBM DOS disks. Those volumes are presented as a flat directory rather than being mistaken for c64fs. A 1581-format volume is supported by a loadable filesystem module. On supported Ultimate hardware, UCI exposes the machine's file storage through a mounted filesystem as well.
 
 \begin{underhood}
-Breadbox replaces the normal KERNAL at run time and supplies its own interrupt entry, keyboard and screen handling, and serial-bus driver. The running system does not depend on Commodore's KERNAL ROM services.
+The filesystem code is in the kernel, not in the shell. Path lookup, inode handling, block mapping, and directory operations are implemented in the kernel filesystem layer. The file layer adds descriptors, shared open-file state, pipes, and device nodes. The CBM DOS, 1581, and Ultimate interfaces fit behind that common file interface, but they do not all have identical capabilities or persistence rules.
 \end{underhood}
 
-\section{A note about names}
-The source repository and some on-disk names retain the name \Breadbin. The current boot banner and user-facing system name are Breadbox. They refer to the same project.
+\section{Programs are part of the system}
+
+The commands in \path{/bin} are real programs. The kernel's loader reads Breadbox's relocatable CX executable format, allocates memory for the image and its uninitialized data, applies relocations, and starts a process. A program can be launched by name when it is in the command directory, or by giving its path.
+
+The supplied programs cover ordinary file and process work: listing, copying, moving, searching, displaying, and editing files; creating directories; inspecting memory and filesystem space; mounting volumes; and managing processes. The shell also has a small set of built-ins, such as \cmd{cd}, \cmd{exit}, \cmd{kill}, and \cmd{jobs}. A built-in is handled by the shell itself; an external command is loaded as a separate program.
+
+Breadbox is also intended to be a place to make software, not merely run it. The \cmd{edit} full-screen editor, the integer BASIC interpreter, and the 6502 assembler run on the C64. A host-side C-subset compiler can translate supported C programs into assembler source for the on-machine assembler, or into bytecode for the p-code virtual machine. The compiler is a development tool on the host; the resulting programs and virtual machine execute on the C64.
+
+\section{The machine underneath}
+
+Breadbox replaces the normal Commodore KERNAL at run time. It supplies its own interrupt entry, keyboard handling, screen output, and serial-bus driver. The running system does not call the Commodore KERNAL ROM as its operating-system service layer.
+
+The kernel is designed around a small, shared memory pool. Processes receive relocatable program images rather than each being given a large, fixed memory partition. The scheduler saves and restores each process's zero page and the portion of the hardware stack it is using. This is one of the reasons the system can support multiple independent processes on a machine with so little memory; it is also why stack depth and executable size matter.
+
+Breadbox's kernel is not preemptible while it is executing a system call. In particular, disk I/O runs as a critical section: the serial-bus driver is not re-entrant, and another process cannot interrupt a kernel operation halfway through. Preemption happens between periods of user-program execution. This is an implementation constraint, not a promise that every long-running operation can be interrupted instantly.
+
+\section{One system, several hardware tiers}
+
+The core system is intended to boot on a stock C64 with a 1541-compatible drive. An REU adds a RAM disk mounted at \path{/tmp} and can provide a block cache for the boot disk. An Ultimate machine adds access to its storage through UCI and is the recommended target for new hardware-oriented work.
+
+These are capability tiers, not different operating systems or separate disk images. Breadbox probes for optional hardware and enables the corresponding facilities when they are available. The core does not require an REU or an Ultimate to start.
+
+\begin{platformnote}
+The existence of a feature in the source tree does not mean that every combination of C64, drive ROM, expansion, and firmware has been tested. The hardware notes and trial records identify which combinations have actually been exercised. In particular, do not treat a result obtained with an Ultimate, an REU, and a JiffyDOS drive as evidence for an otherwise identical stock-1541 configuration.
+\end{platformnote}
+
+\section{Names and lineage}
+
+The user-facing system name is \Breadbox. The source repository, some build products, and several on-disk names still use \Breadbin. For example, the boot file is named \path{BREADBIN}, the disk image is currently \path{build/breadbin.d64}, and the include file used by assembly programs is \path{include/breadbin.inc}. These names are historical implementation details; they do not indicate that a different operating system has been booted.
+
+Breadbox is a fork of Konstantinos Patronas's Breadbin project. The fork retains substantial upstream code and filesystem compatibility while developing its own kernel, tools, and hardware support. The name shown by the boot banner is \cmd{breadbox 0.1}; the version deliberately starts at 0.1 and does not claim to track upstream's version numbering.
+
+\section{Where to go next}
+
+The rest of this manual moves from the visible interface toward the implementation. \Cref{ch:first-session} is a guided session at the prompt. The shell, filesystem, storage, and process chapters explain the everyday interfaces in detail. Later chapters describe the executable format, system-call interface, kernel, memory layout, and drive protocols.
