@@ -109,7 +109,7 @@ The shell has a small number of built-ins:
   \item \cmd{exit} leaves the shell.
 \end{itemize}
 
-These are built in for practical reasons. In particular, a separate \cmd{cd} program could change its own working directory, but that would not change the directory of the shell waiting for your next command. \cmd{kill} is built in so it can still send signals when the process table is full and there is no free slot in which to start \path{/bin/kill}.
+These are built in for practical reasons. In particular, a separate \cmd{cd} program could change its own working directory, but that would not change the directory of the shell waiting for your next command. \cmd{kill} is built in so it can still send signals when the process table is full and there is no free slot in which to start \path{/bin/kill}. Built-ins run inside the shell rather than as pipeline stages; use external commands when you need ordinary pipeline or redirection behavior.
 
 A shell can read commands from a file instead of the console:
 
