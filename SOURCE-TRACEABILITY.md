@@ -54,3 +54,13 @@ A source file is evidence of implementation, not by itself evidence of correct b
 - For user procedures, verify exact command syntax and expected output against the current program and a reproducible test.
 - For hardware claims, name the C64, drive model/ROM, expansion, Ultimate firmware, and software revision when the source records provide them.
 - If a claim cannot be tied to implementation or a test, mark it as uncertain or omit it.
+
+## Chapter: The C64 Keyboard and Screen
+
+| Manual claim | Product-repository evidence | Basis / qualification |
+|---|---|---|
+| The shifted minus key produces the shell pipeline character | `src/kernel/keytab.inc`, `src/bin/sh.s` | Keyboard decode table maps the shifted minus matrix position; shell source documents and parses pipelines. |
+| Control notation means hold CTRL and press the named key | `src/kernel/kbd.s`, `src/kernel/keytab.inc` | CTRL is a keyboard-matrix modifier; the control decode table maps letter positions to control PETSCII values. |
+| DEL backspaces in the shell line editor | `src/bin/sh.s` | `readline` handles `K_DEL` by reducing the input-line length and emitting DEL. |
+| DEL backspaces in the full-screen editor; CTRL-O saves, CTRL-X quits, CTRL-K deletes a line | `src/bin/edit.s` | Key dispatch compares the decoded control values and key constants; behavior is implemented in the editor. |
+| The C64 up-arrow and left-arrow occupy character positions represented as caret and underscore in modern notation | `src/kernel/keytab.inc` | The unshifted decode table labels the positions UP-ARROW and LEFT-ARROW; the printed manual uses modern typographic stand-ins, not literal C64 glyph artwork. |
