@@ -13,6 +13,8 @@ The distinction matters. The shell reads a command line, interprets operators su
 
 That division gives the system a useful property: a command does not need to know whether its input comes from the keyboard, a file, or another program. It reads from its standard input and writes to its standard output. The shell can connect those streams without changing the programs themselves.
 
+It helps to picture a command as a small worker rather than as a feature built into the prompt. The shell decides what should run and how its streams should be connected; the kernel creates the process and supplies the services it needs; the program does its own particular job. The same program can therefore be useful in several situations. A file-listing program does not need a special "pipeline mode", for example, and a text-search program does not need to know who will read its output.
+
 \begin{lstlisting}
 cat /home/readme | grep unix | wc
 \end{lstlisting}
@@ -21,6 +23,8 @@ This pipeline runs three programs. The output of \cmd{cat} becomes the input of 
 
 The same separation applies to background work. A command followed by \path{\&} can continue while the shell accepts another command. The kernel's timer interrupt drives a round-robin scheduler, and the shell can ask the kernel for process and job information. RUN/STOP is delivered as an interrupt signal to the foreground job; \cmd{kill} can signal a process by its process ID.
 
+This is a small system, not an unlimited pool of processes. The current kernel supports at most eight process slots, shared by the shell, commands, and other system processes. Background work is useful, but it is not free: every running program occupies part of a tightly managed memory pool, and a process waiting for input still exists even while it is not using the processor. The process chapter explains the lifecycle, states, signals, and practical limits in more detail.
+
 \section{Files, paths, and devices}
 
 Breadbox presents a hierarchical filesystem. Paths begin at \path{/}; directories can contain files and other directories; and the shell maintains a current working directory. Programs use the same file interface whether a path refers to the boot volume, a mounted disk, or a device node.
@@ -28,6 +32,8 @@ Breadbox presents a hierarchical filesystem. Paths begin at \path{/}; directorie
 The native filesystem is called c64fs. It uses inodes, directories, and a block bitmap, and its current on-disk format is version~2. The boot disk is a hybrid: its ordinary Commodore DOS directory contains the boot program, while the Breadbox filesystem occupies raw sectors elsewhere on the disk. This arrangement lets a C64 load the boot program in the familiar way while Breadbox uses its own filesystem after the kernel starts.
 
 The system can also work with ordinary CBM DOS disks. Those volumes are presented as a flat directory rather than being mistaken for c64fs. A loadable geometry module supports c64fs volumes on 1581-format disks; it does not make an ordinary CBM DOS disk on a 1581 mountable. On supported Ultimate hardware, UCI exposes the machine's file storage through a mounted filesystem as well.
+
+The important idea is that a path describes where a file is in the system's namespace; it does not tell you what physical medium stores it. The boot disk appears at path{/}, an available REU is mounted at path{/tmp}, and other volumes can be attached at directories chosen as mount points. Once mounted, programs use the same path and file operations to reach them. The underlying volume types still matter, however: a CBM DOS disk is a useful exchange medium, but it does not acquire c64fs directories or become a place from which Breadbox can launch programs.
 
 \begin{underhood}
 The filesystem code is in the kernel, not in the shell. Path lookup, inode handling, block mapping, and directory operations are implemented in the kernel filesystem layer. The file layer adds descriptors, shared open-file state, pipes, and device nodes. The CBM DOS, 1581, and Ultimate interfaces fit behind that common file interface, but they do not all have identical capabilities or persistence rules.
@@ -55,6 +61,8 @@ The core system is intended to boot on a stock C64 with a 1541-compatible drive.
 
 These are capability tiers, not different operating systems or separate disk images. Breadbox probes for optional hardware and enables the corresponding facilities when they are available. The core does not require an REU or an Ultimate to start.
 
+The practical difference is capacity and convenience, not a different user interface. On a stock machine, the boot disk is the working storage available to the system. An REU adds volatile memory-backed storage and can reduce repeated reads from the serial disk through its block cache. Ultimate storage adds another place to keep files, reached through a hardware-specific interface. None of these changes the basic model of paths, programs, and streams introduced above. The storage chapter describes what each tier provides and the conditions under which it is available.
+
 \begin{platformnote}
 The existence of a feature in the source tree does not mean that every combination of C64, drive ROM, expansion, and firmware has been tested. The hardware notes and trial records identify which combinations have actually been exercised. In particular, do not treat a result obtained with an Ultimate, an REU, and a JiffyDOS drive as evidence for an otherwise identical stock-1541 configuration.
 \end{platformnote}
@@ -67,4 +75,6 @@ Breadbox is a fork of Konstantinos Patronas's Breadbin project. The fork retains
 
 \section{Where to go next}
 
-The rest of this manual moves from the visible interface toward the implementation. \Cref{ch:first-session} is a guided session at the prompt. The shell, filesystem, storage, and process chapters explain the everyday interfaces in detail. Later chapters describe the executable format, system-call interface, kernel, memory layout, and drive protocols.
+The rest of this manual moves from the visible interface toward the implementation. \Cref{ch:first-session} is a guided session at the prompt; it is meant to be tried, not merely read. The chapters in Part~II then take apart the everyday tools one at a time: the shell explains how a line becomes a set of processes, Files and Directories explains the namespace those programs share, Disks and Storage explains where that namespace is backed, and Processes and Jobs explains what happens while programs run.
+
+When you are ready to make changes rather than just use the system, the worked projects and programming chapters provide a route from a small program to the executable format and system interface. The final technical part follows the same path inward: boot, memory, kernel services, filesystem implementation, serial drives, and hardware-specific facilities. You do not need to understand those internals to use Breadbox, but the later chapters are there when you want to know how the machine is making it happen.
