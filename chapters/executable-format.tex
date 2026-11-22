@@ -1,0 +1,25 @@
+% Executable format reference
+% Keep this chapter grounded in the loader and assembler implementations.
+\chapter{Executable File Format}
+\label{ch:executable-format}
+
+\todo{Specify the executable format from the actual loader and assembler implementations. Do not infer header fields, load addresses, relocation behavior, or entry-point rules from examples alone.}
+
+This chapter will describe the on-disk representation of executable programs
+and the rules used by the system loader. The specification must be checked
+against the implementation before it is treated as authoritative.
+
+\section{Format overview}
+\todo{Document magic bytes or signatures, header layout, versioning, and how the loader distinguishes executable files from other file types.}
+
+\section{Header and payload}
+\todo{Provide a byte-offset table for every header field, including size, encoding, valid ranges, and interpretation. Document payload placement and any alignment requirements.}
+
+\section{Loading and execution}
+\todo{Trace the loader's validation, memory allocation, load-address selection, relocation (if any), entry-point selection, and error paths.}
+
+\section{Producing executable files}
+\todo{Document the assembler or other toolchain output options, with reproducible examples and a byte-for-byte annotated sample.}
+
+\section{Compatibility and failure cases}
+\todo{Record format versions, compatibility rules, malformed-file handling, and relevant limits.}
