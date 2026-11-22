@@ -97,7 +97,7 @@ Try \cmd{echo /bin/s?}, then \cmd{echo /bin/no-such-command*}. The first should 
 Most commands are separate executable files. When you type \cmd{ls}, the shell loads \path{/bin/ls}; when you type \cmd{grep}, it loads \path{/bin/grep}. A command can also be given by its path:
 
 \begin{lstlisting}
- /bin/ls /home
+/bin/ls /home
 \end{lstlisting}
 
 The shell has a small number of built-ins:
@@ -223,7 +223,7 @@ The shell performs several distinct steps:
   \item It splits the line into words and operators. Quotes group text into a word and are removed.
   \item It recognizes wildcard patterns and expands matching file names.
   \item It identifies pipelines, redirections, sequencing, conditional operators, and background markers.
-  \item It runs a built-in when the command is a single simple built-in command; otherwise it asks the kernel to load and start an executable.
+  \item It runs a built-in for a single, unpiped built-in command; otherwise it asks the kernel to load and start an executable. Built-ins are shell operations, not ordinary pipeline stages.
   \item It waits for foreground work, or returns to the prompt for background work.
 \end{enumerate}
 
