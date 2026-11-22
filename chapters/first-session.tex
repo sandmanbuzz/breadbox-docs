@@ -1,53 +1,107 @@
 \chapter{Your First Session}
 \label{ch:first-session}
 
-This chapter is a guided tour. Work through it at the Breadbox prompt; each exercise introduces one idea and gives you a way to check what happened.
+This chapter is a guided tour of the running system. The examples use only files and commands supplied on the boot disk. They are intended to be typed at the Breadbox shell prompt, not in the host computer's terminal.
+
+The examples assume a freshly built system disk. If you repeat an exercise and a file or directory already exists, inspect it first rather than assuming that a command will behave as it did on a clean disk.
 
 \section{Meet the prompt}
-After boot and login, try:
+
+After boot, Breadbox starts its initialization program and eventually presents a shell. The prompt includes the current working directory; on a fresh login you will commonly see \path{/ \$}. Start by looking around:
 
 \begin{lstlisting}
 help
 pwd
 ls /
 cat /etc/motd
+ls /bin
 \end{lstlisting}
 
-The prompt is where commands are entered. \cmd{help} displays the help text installed on the current disk; \cmd{pwd} reports the working directory; \cmd{ls} lists directory entries; and \cmd{cat} writes a file to the screen.
+\cmd{help} displays the command summary installed in \path{/etc/help}. It groups commands by purpose and shows the shell operators. \cmd{pwd} prints the current working directory. \cmd{ls /} lists the root directory, and \cmd{cat} copies a file to standard output. The message of the day is deliberately short: it welcomes you and suggests listing \path{/bin} to see the available commands.
+
+The programs themselves live in \path{/bin}. Try the supplied readme:
+
+\begin{lstlisting}
+cat /home/readme
+cat /home/readme | grep unix | wc
+\end{lstlisting}
+
+The second command is a small but complete example of composition. \cmd{cat} reads the file, \cmd{grep} keeps lines containing \cmd{unix}, and \cmd{wc} counts the resulting lines, words, and bytes. Each program does one job; the shell connects them.
 
 \section{Make a place to work}
+
+Use a directory under \path{/home} for the rest of the exercises:
+
 \begin{lstlisting}
 mkdir /home/work
 cd /home/work
 pwd
 \end{lstlisting}
 
-\section{Create and inspect a file}
+The final command should report \path{/home/work}. \cmd{cd} is a shell built-in because changing the working directory must change the shell process itself. Running a separate program to change its own directory would not change the directory of the shell waiting for your next command.
+
+\section{Create, replace, and append}
+
+Create a small text file and read it back:
+
 \begin{lstlisting}
 echo hello > greeting
 cat greeting
+\end{lstlisting}
+
+The \path{>} operator connects the command's standard output to a file. It creates the file if necessary and replaces its previous contents if it already exists. Append another line:
+
+\begin{lstlisting}
 echo again >> greeting
 cat greeting
 \end{lstlisting}
 
-The first redirection creates or replaces the file. The second appends to it.
+The \path{>>} operator opens the file for appending, so the original line remains. This distinction is important: use \path{>} when you mean to replace a file, and \path{>>} when you mean to add to it.
 
-\section{Connect programs}
+You can now combine redirection and a pipeline:
+
 \begin{lstlisting}
 cat greeting | wc
+cat greeting | grep again
 \end{lstlisting}
 
-The pipe connects the output of \cmd{cat} to the input of \cmd{wc}. This is not a special built-in text operation: it connects two processes.
+The first command counts the contents of the file. The second prints the line containing \cmd{again}. Neither \cmd{wc} nor \cmd{grep} needs to know whether its input came from a file, the keyboard, or another process.
 
 \begin{trythis}[Experiment]
-Replace \cmd{cat} with \cmd{echo}, then try piping the output through \cmd{grep}. Change the search word and observe the result.
+Replace \cmd{grep again} with \cmd{grep hello}. Then try a word that is not in the file. Observe the difference between a matching line and no output.
 \end{trythis}
 
-\section{Start a background job}
+\section{Start and stop a background job}
+
+The \cmd{count} program prints an increasing number once per second, forever. Redirect its output so it does not compete with the shell for the screen, and start it in the background:
+
 \begin{lstlisting}
-count &
+count > /dev/null &
 jobs
 ps
 \end{lstlisting}
 
-The ampersand asks the shell to run the command in the background. The job list and process table show different views of running work. Use RUN/STOP to interrupt the foreground command; use \cmd{kill} when you need to signal a process by PID.
+The ampersand asks the shell to start the command as a background job. \cmd{jobs} reports jobs known to this shell; \cmd{ps} displays the system process table. Find the process ID (PID) for \cmd{count}, then stop that process:
+
+\begin{lstlisting}
+kill PID
+ps
+\end{lstlisting}
+
+Replace \cmd{PID} with the number shown by \cmd{ps}; do not type the letters \cmd{PID}. With no signal option, \cmd{kill} sends the default termination signal. The process should disappear from the process table after it exits.
+
+For a foreground command, RUN/STOP is the keyboard interrupt. It sends \cmd{SIGINT} to the foreground job. The distinction is useful: RUN/STOP acts on the foreground job, while \cmd{kill} lets you name a process by PID.
+
+\section{What you have just used}
+
+This short session has exercised several different parts of Breadbox:
+
+\begin{itemize}
+  \item The shell parses commands, paths, pipelines, redirection, and background-job syntax.
+  \item External commands are independent programs loaded from the filesystem.
+  \item The filesystem provides directories, path lookup, and ordinary files.
+  \item The kernel connects processes with pipes and file descriptors, and schedules runnable processes.
+  \item Device nodes such as \path{/dev/null} participate in the same input/output interface as files.
+\end{itemize}
+
+The following chapters take these ideas one at a time. \Cref{ch:shell} explains the command language; \Cref{ch:files-and-directories} covers paths and files; and \Cref{ch:processes} develops the process and job model.
