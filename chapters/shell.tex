@@ -29,7 +29,7 @@ The shell prompt shows the current working directory. A relative path such as \p
 When the shell is reading from the C64 console, it uses its own line editor. You can correct a command before pressing RETURN:
 
 \begin{itemize}
-  \item DEL removes the character to the left of the cursor (the end of the line).
+  \item DEL removes the last character in the line. The shell editor works at the end of the line; it has no cursor movement or forward-delete command.
   \item CTRL-D on an empty line ends the shell's input. If the line is not empty, it does nothing.
   \item TAB (CTRL-I) completes a command name or file name.
   \item UP-ARROW and DOWN-ARROW move through the recent command history.
@@ -60,10 +60,10 @@ echo 'hello world'
 The first command passes two arguments after the command name; the other two pass one. The quote marks group the text and are not part of the argument. Single and double quotes have the same grouping role in this shell. A quoted operator is ordinary text, not shell punctuation:
 
 \begin{lstlisting}
-echo "one | two"
+echo "one ; two"
 \end{lstlisting}
 
-The vertical bar in that argument is printed; it does not start a pipeline.
+The semicolon in that argument is printed; it does not separate commands. We will meet the semicolon as a command separator later in this chapter.
 
 Quoted and unquoted pieces can be adjacent within one word. For example, \cmd{echo pre" fix"} passes one argument, \cmd{pre fix}. Quotes do not introduce variable expansion or command substitution. The shell has no general-purpose escape syntax: a backslash is an ordinary character, not a way to escape the next character. Keep quotes balanced, and use quotes when an argument contains spaces or shell operators.
 
