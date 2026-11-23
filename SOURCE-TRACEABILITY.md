@@ -3,7 +3,7 @@
 This file is an editorial working aid for the manual. It records where claims are grounded in the product repository; it is not a user-facing bibliography and does not replace implementation or hardware testing.
 
 **Product source of truth:** `sandmanbuzz/breadbin`, branch `main`.  
-**Product revision consulted for this pass:** `7c8fab495bb1d73672b644ff78213ce9058a3539` (2026-11-21, `size ledger: ee06ae8 (pvm squish)`).  
+**Product revision consulted for the latest Files and Directories pass:** `bb0844354bca8ab0401c0faf40918bc3115bfcc2` (2026-11-23, `test: keep p-code compile refusals active without py65`). Earlier chapter entries may refer to the prior revision; refresh them before publication.  
 **Manual branch:** `c/book-foundation`.
 
 ## Evidence levels
@@ -94,3 +94,20 @@ A source file is evidence of implementation, not by itself evidence of correct b
 | Trailing `&` starts a background command; `jobs` lists shell children and `ps` lists system processes | `src/bin/sh.s`, `src/bin/ps.s`, `src/kernel/proc.s`, `tests/test_system.py::Boot.test_08_background_and_kill`, `Boot.test_21_many_sleepers_stay_responsive` | Implementation and system tests. |
 | Shell limits are 127 input characters, 32 tokens, and 16 argument-vector entries | `src/bin/sh.s` (`LINEMAX`, `MAXTOK`, `MAXARG`) | Current implementation constants; not a general system-wide limit. |
 | There is no variable expansion beyond `$?`, command substitution, arithmetic expansion, or backslash escaping | `src/bin/sh.s` tokenizer and expansion logic | Negative capability claim derived from the complete current shell parser; re-check when the grammar changes. |
+
+## Chapter: Files and Directories
+
+| Manual claim / exercise | Product-repository evidence | Basis / qualification |
+|---|---|---|
+| The supplied root tree includes `/bin`, `/etc`, `/home`, `/lib`, `/mnt`, and `/tmp` | `rootfs/` tree, `tools/mkimage.py` | Shipped image contents. Optional runtime mounts, especially REU-backed `/tmp`, are distinct from the rootfs directory entry. |
+| `pwd` reports the working directory; `ls` lists current or named directories and files | `src/bin/pwd.s`, `src/bin/ls.s`, `src/kernel/proc.s`, `src/kernel/file.s` | Implementation. `ls -l` obtains type/size via stat; `-a` includes dot-prefixed entries. |
+| Absolute paths start at root; relative paths use per-process cwd; `.` and `..` are resolved by path lookup | `src/kernel/fs.s` (namei/path lookup), `src/kernel/proc.s` (cwd per process), `src/bin/sh.s` (`cd`), `tests/test_system.py::Boot.test_07_directories`, `Boot.test_16_paths` | Implementation and VICE tests. Mounted-filesystem root traversal is described in `docs/filesystem.md`. |
+| Path and name limits: 48-byte cwd buffer; 14-character c64fs names | `src/kernel/k.inc` (`CWDLEN=48`, `NAME_MAX=14`), `src/kernel/fs.s`, `docs/filesystem.md` | Implementation constants and product filesystem documentation. The 48-byte value is the cwd/path buffer limit; do not imply every input buffer is independently 48 bytes without checking its caller. |
+| Breadbox paths are case-sensitive | `docs/filesystem.md`, `src/kernel/fs.s` directory lookup | Product filesystem documentation and implementation. |
+| `cd` is a shell built-in; a process has its own cwd and children inherit it | `src/bin/sh.s`, `src/kernel/proc.s` (`p_cwddev`, `p_cwdino`), `tests/test_system.py::Boot.test_07_directories` | Implementation and system test. |
+| `mkdir` creates directories; `rmdir` only removes empty directories; `rm` unlinks files | `src/bin/mkdir.s`, `src/bin/rmdir.s`, `src/bin/rm.s`, `src/kernel/file.s` (`sys_mkdir`, `sys_rmdir`, `sys_unlink`), `tests/test_system.py::Boot.test_07_directories` | Implementation and VICE test including non-empty-directory refusal. |
+| `cp` copies file contents; `mv` renames/moves a file or directory | `src/bin/cp.s`, `src/bin/mv.s`, `src/kernel/file.s` (`sys_rename`), `tests/test_system.py::Boot.test_10_mv_cp` | Implementation and system test. Destination-directory behavior is implemented by command-side target handling. |
+| `cat` reads files to standard output; shell redirection can create/truncate or append | `src/bin/cat.s`, `src/bin/echo.s`, `src/bin/sh.s`, `tests/test_system.py::Boot.test_06_redirect_roundtrip` | Implementation and VICE test. |
+| `stat` reports type, size, inode, links, and device; `df` reports filesystem capacity and inode counts | `src/bin/stat.s`, `src/bin/df.s`, `src/kernel/file.s` (`sys_stat`, `sys_fsinfo`), `docs/filesystem.md` | Implementation and product filesystem documentation. |
+| c64fs has real directories; CBM DOS is a flat directory without mkdir or executable loading | `docs/filesystem.md`, `src/mod/cbm.s`, `src/kernel/fs.s`, `src/kernel/file.s` | Product documentation and backend implementation. Full disk/mount procedures belong to the storage chapter. |
+| c64fs stores no useful timestamps; file data is allocated in 256-byte blocks | `docs/filesystem.md`, `src/kernel/fs.s`, `src/kernel/blk.s` | Product filesystem documentation and implementation. |
