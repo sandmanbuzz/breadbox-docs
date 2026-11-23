@@ -69,7 +69,7 @@ Use c64fs for Breadbox work: programs, source files, directories, and data that 
 
 A normal Commodore disk uses the drive's CBM DOS filesystem. Breadbox can mount it and present its files in a single flat directory. You can list, read, copy, rename, and remove files, but there are no directories to create and programs cannot be run from that disk.
 
-This makes CBM DOS useful for exchanging files with ordinary C64 software and disk-image tools. It is not a second way to store a Breadbox directory tree.
+This makes CBM DOS useful for exchanging files with ordinary C64 software and disk-image tools. Files written to a CBM DOS disk are created as sequential (SEQ) files; writing an existing name replaces that file, and only one file per drive can be open for writing at a time. The size shown by \cmd{ls -l} is an estimate based on allocated blocks, not the exact byte length. It is not a second way to store a Breadbox directory tree.
 
 The two filesystems have different capabilities even though both appear in the same path namespace. For example, \cmd{cp} can copy a file from a CBM DOS disk into a c64fs directory, but \cmd{mkdir} cannot create a directory on the CBM DOS volume.
 
@@ -126,7 +126,7 @@ reattach
 
 Reattachment checks that the disk in the drive is the one that was ejected, using its CBM disk label and Breadbox build identifier. It also refuses while another mount still uses drive 8.
 
-This workflow requires an REU with at least four banks for the cache. With no REU, or with too little REU memory, \cmd{eject} cannot make drive 8 available. The \cmd{eject} support module is loaded on demand and remains resident once loaded.
+This workflow requires an REU with at least four banks for the cache. With no REU, or with too little REU memory, \cmd{eject} cannot make drive 8 available. The command is root-only. Its support module is loaded on demand and remains resident once loaded.
 
 \section{1581 disks}
 
