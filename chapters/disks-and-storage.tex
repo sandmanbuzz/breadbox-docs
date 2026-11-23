@@ -1,3 +1,213 @@
 \chapter{Disks and Storage}
 \label{ch:storage}
-\todo{Cover c64fs, CBM DOS exchange disks, REU /tmp and cache, UCI, 1581 volumes, mounts, eject/reattach, formatting, and host image tools.}
+
+The filesystem chapter explained how Breadbox presents files and directories as one tree. This chapter looks beneath that tree: which devices provide the storage, how a disk is mounted, what the two disk formats mean, and how to prepare media for use.
+
+The central distinction is between a \emph{path} and the \emph{volume} behind it. A path such as \path{/mnt} is a place in the directory tree. Mounting attaches a device and its filesystem at that place. The path syntax stays familiar, but the operations available there depend on the kind of volume mounted.
+
+\section{The storage devices}
+
+Breadbox numbers its block devices internally. In ordinary use, you work with drive numbers and mount points rather than device numbers:
+
+\begin{center}
+\begin{tabular}{lll}
+\textbf{Device} & \textbf{What it represents} & \textbf{Usual place}\\
+0 & Boot disk in drive 8 & \path{/}\\
+1 & REU RAM disk, when available & \path{/tmp}\\
+2 & Drive 9 & Chosen mount point\\
+3 & Drive 10 & Chosen mount point\\
+4 & Drive 11 & Chosen mount point
+\end{tabular}
+\end{center}
+
+The boot disk is mounted at \path{/} automatically. With a supported REU, Breadbox normally provides a temporary filesystem at \path{/tmp}. Drives 9, 10, and 11 can hold additional disks. The mount table has room for four active mounts in total, including \path{/tmp}.
+
+Use \cmd{mount} without arguments to see the current arrangement:
+
+\begin{lstlisting}
+mount
+\end{lstlisting}
+
+The listing identifies the drive or device, its mount point, and the filesystem type. Treat it as a report of the machine's current state, not as a fixed inventory: the output changes with the disks and expansion hardware present.
+
+\section{Mounting another disk}
+
+A mount point is an existing directory where the other volume will appear. The supplied boot filesystem includes \path{/mnt} for this purpose. Put a disk in drive 9 and mount it there:
+
+\begin{lstlisting}
+mount 9 /mnt
+mount
+ls /mnt
+\end{lstlisting}
+
+You can now use ordinary paths such as \path{/mnt/readme}. Path lookup crosses the mount point automatically. You do not need a special command to list or read a mounted volume.
+
+To detach it, first leave the volume and close any files that refer to it:
+
+\begin{lstlisting}
+cd /
+umount /mnt
+\end{lstlisting}
+
+Unmounting is refused while a process has a file open on that device or has its working directory somewhere on it. This is a safety boundary: do not treat a failed unmount as permission to pull the disk. Find the process or directory reference that is keeping it busy, close or leave it, and try again.
+
+The same procedure applies to drives 10 and 11. The mount point must exist before you use it; Breadbox does not create it as part of the mount operation.
+
+\section{Two kinds of disk}
+
+Breadbox supports two importantly different filesystems on ordinary 1541 media.
+
+\subsection{c64fs: Breadbox's filesystem}
+
+c64fs is the native Breadbox filesystem. It supports directories, relative and absolute paths, and executable programs. The boot disk uses c64fs for its files, while retaining a small Commodore DOS directory entry for the boot program itself.
+
+Other C64 software does not understand c64fs. It sees the boot entry and a disk whose Commodore BAM marks the sectors as allocated. This is deliberate: the drive's own DOS must not allocate sectors over Breadbox's filesystem.
+
+Use c64fs for Breadbox work: programs, source files, directories, and data that you want to navigate as a normal filesystem tree.
+
+\subsection{CBM DOS: exchange disks}
+
+A normal Commodore disk uses the drive's CBM DOS filesystem. Breadbox can mount it and present its files in a single flat directory. You can list, read, copy, rename, and remove files, but there are no directories to create and programs cannot be run from that disk.
+
+This makes CBM DOS useful for exchanging files with ordinary C64 software and disk-image tools. It is not a second way to store a Breadbox directory tree.
+
+The two filesystems have different capabilities even though both appear in the same path namespace. For example, \cmd{cp} can copy a file from a CBM DOS disk into a c64fs directory, but \cmd{mkdir} cannot create a directory on the CBM DOS volume.
+
+\section{Formatting a disk}
+
+The \cmd{format} command creates a new disk in drive 9, 10, or 11:
+
+\begin{lstlisting}
+format 9
+format 9 cbm photos
+format 9 c64fs work
+\end{lstlisting}
+
+The default is c64fs, and the default disk name is \path{breadbin}. Choose \path{cbm} for a normal C64 exchange disk or \path{c64fs} for a Breadbox disk. Formatting erases the disk. Breadbox asks for confirmation before proceeding.
+
+\begin{quote}
+\textbf{Destructive operation.} Check the drive number and disk before answering the confirmation prompt. The command refuses to format drive 8, which holds the running system, and refuses a disk that is currently mounted.
+\end{quote}
+
+Formatting first asks the drive's own DOS to lay down the sector headers. For a CBM disk, that is the whole operation. For c64fs, Breadbox then writes its superblock, allocation bitmap, inode table, and empty root directory, and marks the disk's sectors allocated in the CBM BAM.
+
+On a real 1541, formatting takes roughly a minute and a half. The system pauses while the drive performs the operation. When it finishes, mount the new disk:
+
+\begin{lstlisting}
+mount 9 /mnt
+\end{lstlisting}
+
+\section{The REU and \path{/tmp}}
+
+When a supported REU is present, Breadbox normally makes a c64fs RAM disk and mounts it at \path{/tmp}. It is intended for temporary files and work that benefits from faster storage than a serial disk drive.
+
+The RAM disk is volatile: it is initialized at boot and its contents are empty after every reboot. Do not keep the only copy of anything important there. Without an REU, \path{/tmp} is simply an ordinary directory on the boot disk.
+
+The REU may also hold a cache of the boot disk's blocks. This is a separate role from the \path{/tmp} filesystem. On REUs with enough banks, the cache occupies memory above the RAM disk; a smaller REU may provide less temporary space or no boot-disk cache. The cache is write-through: a change to the boot disk is sent to the disk immediately rather than waiting for a later flush.
+
+\section{Using one drive for two disks}
+
+A single-drive system can temporarily use drive 8 for another disk if it has an REU large enough for the boot-disk block cache. The \cmd{eject} command first reads the blocks used by the boot filesystem into that cache. The boot disk can then be removed, and another disk mounted from drive 8:
+
+\begin{lstlisting}
+eject
+mount 8 /mnt
+\end{lstlisting}
+
+While the boot disk is out, reads from \path{/} are served by the REU cache. Operations that would modify \path{/} wait for the boot disk to return; they do not silently write to the temporary disk now in drive 8. Other mounts and the \path{/tmp} RAM disk are unaffected.
+
+When finished with the second disk, leave and unmount it, put the original boot disk back in drive 8, and reattach it:
+
+\begin{lstlisting}
+cd /
+umount /mnt
+reattach
+\end{lstlisting}
+
+Reattachment checks that the disk in the drive is the one that was ejected, using its CBM disk label and Breadbox build identifier. It also refuses while another mount still uses drive 8.
+
+This workflow requires an REU with at least four banks for the cache. With no REU, or with too little REU memory, \cmd{eject} cannot make drive 8 available. The \cmd{eject} support module is loaded on demand and remains resident once loaded.
+
+\section{1581 disks}
+
+A 1581 can hold a larger c64fs volume: 3,200 blocks, or 800 KB. It is mounted as an additional volume, not used as the boot disk. Breadbox's standard block mapping is for 1541 geometry, so load the 1581 module before mounting or formatting a 1581 c64fs disk:
+
+\begin{lstlisting}
+mod load /lib/km/d81
+mount 9 /mnt
+\end{lstlisting}
+
+The module checks the drive's geometry when it is opened. It does not make ordinary CBM DOS disks on a 1581 mountable; the supported 1581 volume is c64fs. Do not unload the module while a 1581 volume is mounted.
+
+A 1581 volume can also be created with \cmd{format} after the module is loaded, or prepared on the host as a \path{.d81} image (see below). The 1581's own directory and allocation structures are kept out of the c64fs data area, just as the 1541's CBM structures are.
+
+\section{Preparing disk images on the host}
+
+The product repository includes \path{tools/mkimage.py}, which builds and inspects c64fs images. This is a host-side tool, run on the computer used to build Breadbox, not a command entered at the C64 prompt.
+
+For example, to create a disk image from a host directory:
+
+\begin{lstlisting}[language=bash]
+python3 tools/mkimage.py build data.d64 --boot build/breadbin.prg --root myfolder
+\end{lstlisting}
+
+To inspect files in an image:
+
+\begin{lstlisting}[language=bash]
+python3 tools/mkimage.py ls build/breadbin.d64 /home
+python3 tools/mkimage.py cat build/breadbin.d64 /home/readme
+\end{lstlisting}
+
+The \cmd{ls} and \cmd{cat} subcommands can also read older format-1 c64fs images. The kernel mounts format 2; a format-1 image must be upgraded before it can be used as a current c64fs volume. When upgrading, supply a current boot program if the image is meant to boot: otherwise the old boot file is copied unchanged and will not understand the new filesystem format.
+
+To prepare a 1581 c64fs image:
+
+\begin{lstlisting}[language=bash]
+python3 tools/mkimage.py d81 data.d81 --root myfolder
+\end{lstlisting}
+
+Then transfer the image to the emulator or storage setup used by the C64, load \path{/lib/km/d81}, and mount the drive as described above.
+
+For an ordinary CBM DOS image, use VICE's \cmd{c1541} utility instead. For example:
+
+\begin{lstlisting}[language=bash]
+c1541 -format "mydisk,md" d64 mydisk.d64
+\end{lstlisting}
+
+\section{A practical disk workflow}
+
+This example prepares a Breadbox data disk, uses it, and detaches it cleanly:
+
+\begin{lstlisting}
+format 9 c64fs work
+mount 9 /mnt
+mkdir /mnt/projects
+cp /home/readme /mnt/projects/readme
+ls -l /mnt/projects
+cd /
+umount /mnt
+\end{lstlisting}
+
+For a disk intended to travel between Breadbox and other C64 software, choose CBM DOS instead. Copy files to and from it, remembering that it is a flat directory and cannot hold executable Breadbox programs.
+
+\section{Storage limits at a glance}
+
+The current implementation has several fixed limits:
+
+\begin{center}
+\begin{tabular}{ll}
+\textbf{Limit} & \textbf{Value}\\
+Maximum c64fs file size & 35,840 bytes\\
+Files and directories per disk & 127\\
+Blocks on a 1541 c64fs volume & 683\\
+Blocks on a 1581 c64fs volume & 3,200\\
+Blocks on the REU RAM disk & up to 2,048\\
+Maximum name length & 14 characters\\
+Maximum path length & 47 characters\\
+Simultaneous mounts & 4, including \path{/tmp}\\
+Open files, system-wide & 24\\
+Open files per process & 8
+\end{tabular}
+\end{center}
+
+These are implementation limits, not targets to work around casually. In particular, a large host-side disk image does not imply that a single file can exceed the c64fs maximum.
