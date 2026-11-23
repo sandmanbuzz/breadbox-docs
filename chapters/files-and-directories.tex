@@ -1,3 +1,199 @@
 \chapter{Files and Directories}
 \label{ch:files}
-\todo{Document path syntax, working directory, case sensitivity, filename and path limits, directory operations, file metadata, and practical workflows.}
+
+Breadbox presents files through a directory tree. You can work with the boot disk, an optional REU filesystem, and additional mounted volumes using paths in the same general way. The path tells Breadbox where an object appears in the tree; the filesystem and device behind that path determine which operations are possible.
+
+This chapter covers the everyday work: finding your way around, creating directories, copying and moving files, and understanding what the filesystem can and cannot do. The details of disk formats and mounting additional devices are covered in \Cref{ch:storage}.
+
+\section{The directory tree}
+
+The path \path{/} names the root directory. It is the starting point for absolute paths, and the boot filesystem is mounted there automatically. The supplied image has familiar top-level directories:
+
+\begin{lstlisting}
+/
+|-- bin
+|-- etc
+|-- home
+|-- lib
+|-- mnt
+|-- tmp
+\end{lstlisting}
+
+The names indicate the intended roles: \path{/bin} contains executable programs, \path{/etc} contains system configuration and help files, \path{/home} is for user files, \path{/lib} holds loadable modules and support files, and \path{/mnt} is a convenient mount point. \path{/tmp} is used for the REU-backed temporary filesystem when that facility is available. The exact contents depend on the system image and installed hardware.
+
+Use \cmd{pwd} to print the current working directory and \cmd{ls} to list a directory:
+
+\begin{lstlisting}
+pwd
+ls
+ls /etc
+ls /bin
+\end{lstlisting}
+
+With no path argument, \cmd{ls} lists the current directory. Give it a path to inspect another directory, or a file path to show that file as an entry. The \cmd{-l} option adds the entry type and size; \cmd{-a} includes names beginning with a dot:
+
+\begin{lstlisting}
+ls -l /home
+ls -a
+\end{lstlisting}
+
+\section{Absolute and relative paths}
+
+An absolute path begins with a slash and is interpreted from the root. A relative path is interpreted from the current working directory:
+
+\begin{lstlisting}
+cd /home
+pwd
+ls
+cat readme
+cat /home/readme
+\end{lstlisting}
+
+The last two commands name the same file, assuming the current directory is \path{/home}. Relative paths are useful when working in one area; absolute paths are useful in scripts and examples where you do not want the result to depend on the caller's current directory.
+
+The special path components \path{.} and \path{..} mean the current directory and its parent:
+
+\begin{lstlisting}
+cd /home
+cd .
+cd ..
+pwd
+\end{lstlisting}
+
+At the root, \path{/..} remains \path{/}. A mounted filesystem has its own root; walking to \path{..} from the top of that mounted filesystem returns to the directory on which it was mounted. This makes a mounted volume behave like a branch in the same directory tree.
+
+Breadbox paths are case-sensitive. Treat \path{Readme}, \path{README}, and \path{readme} as different names. A name component can contain up to 14 characters; the path buffer is limited to 48 characters. Keep names and paths comfortably within those limits, particularly when combining several directory levels.
+
+\section{Changing directories}
+
+The shell's \cmd{cd} command changes its own working directory:
+
+\begin{lstlisting}
+cd /home
+mkdir projects
+cd projects
+pwd
+\end{lstlisting}
+
+Because \cmd{cd} is a shell built-in, the change remains in effect for the next command. A separate program could change only its own working directory and then exit, leaving the shell unchanged. With no argument, \cmd{cd} returns to the root directory.
+
+A process has its own working directory. A child program inherits the directory from the process that starts it, so a relative path passed to a command is resolved from the directory in effect when that command runs.
+
+\section{Creating and removing directories}
+
+Use \cmd{mkdir} to create a directory:
+
+\begin{lstlisting}
+cd /home
+mkdir projects
+mkdir projects/source
+ls -l projects
+\end{lstlisting}
+
+The parent directory must already exist. Breadbox does not create missing intermediate directories automatically; create the tree one level at a time.
+
+Use \cmd{rmdir} to remove an empty directory:
+
+\begin{lstlisting}
+rmdir projects/source
+rmdir projects
+\end{lstlisting}
+
+A directory must be empty before it can be removed. The entries \path{.} and \path{..} are part of every directory, but do not count as user files for this check. If a directory contains files or subdirectories, remove or move those entries first. \cmd{rmdir} is intentionally not a recursive delete.
+
+\section{Working with files}
+
+Breadbox provides small, composable file commands:
+
+\begin{itemize}
+  \item \cmd{cat} reads files and writes their contents to standard output.
+  \item \cmd{cp} copies one file to another path.
+  \item \cmd{mv} renames a file or directory, or moves it into an existing directory.
+  \item \cmd{rm} removes a file.
+  \item \cmd{stat} reports information about a file.
+\end{itemize}
+
+For example, copy the supplied readme into your work area, inspect it, and rename the copy:
+
+\begin{lstlisting}
+cp /home/readme /home/projects/readme
+cat /home/projects/readme
+mv /home/projects/readme /home/projects/notes
+stat /home/projects/notes
+\end{lstlisting}
+
+If the destination of \cmd{cp} or \cmd{mv} is an existing directory, the source is placed inside that directory using its original base name. Otherwise the destination names the new file or directory. \cmd{mv} changes the directory entry; \cmd{cp} reads and writes file contents.
+
+Use \cmd{rm} to remove a file when it is no longer needed:
+
+\begin{lstlisting}
+rm /home/projects/notes
+rmdir /home/projects
+\end{lstlisting}
+
+Removing a file is not the same as removing a directory: \cmd{rm} unlinks a file, while \cmd{rmdir} checks that a directory is empty. There is no interactive trash or undo facility. Check the path before removing something.
+
+\section{Creating a text file}
+
+The shell can create or replace a file by redirecting a command's output. This is often the simplest way to make a short text file:
+
+\begin{lstlisting}
+echo first line > /home/projects/todo
+echo second line >> /home/projects/todo
+cat /home/projects/todo
+\end{lstlisting}
+
+A single \path{>} creates the file or truncates an existing file before writing. \path{>>} appends to the end. Redirection is performed by the shell; \cmd{echo} simply writes its arguments to standard output. For longer text or interactive editing, use the on-machine editor described in \Cref{ch:tools}.
+
+\section{Names, directories, and file information}
+
+c64fs stores files and directories as distinct object types. A directory contains named entries that refer to filesystem objects. Every directory has \path{.} and \path{..} entries, and the root directory is the top of the tree. Names are case-sensitive and limited to 14 characters.
+
+Use \cmd{stat} to inspect an object's type, size, inode number, link count, and device number:
+
+\begin{lstlisting}
+stat /home
+stat /home/readme
+\end{lstlisting}
+
+Use \cmd{ls -l} when you want a compact directory listing with object type and size. Use \cmd{df} when you want filesystem-wide space and inode counts:
+
+\begin{lstlisting}
+ls -l /home
+df
+\end{lstlisting}
+
+The filesystem currently records no modification or change timestamps of its own. Do not expect \cmd{ls -l} or \cmd{stat} to provide a useful last-modified date. The size shown by \cmd{stat} is the file's byte length; the filesystem allocates storage in 256-byte blocks.
+
+\section{Filesystem boundaries}
+
+The directory tree can contain more than one filesystem. The boot disk is mounted at \path{/}; when an REU is present, its temporary filesystem is normally mounted at \path{/tmp}. Other disks can be mounted at directories such as \path{/mnt}. From the point of view of path lookup, these are branches of one tree.
+
+The operations available at a path depend on the mounted filesystem. Breadbox's c64fs supports directories and executable files. A CBM DOS disk is presented as a flat directory: files can be listed, read, copied, renamed, and removed, but you cannot create directories on it or execute programs from it. This is useful for exchanging files with ordinary C64 software, but it is not interchangeable with c64fs. See \Cref{ch:storage} for mounting, formatting, and the differences between storage types.
+
+\section{A practical workspace}
+
+Here is a small routine for making a clean place to work and keeping a copy of an original file:
+
+\begin{lstlisting}
+mkdir /home/work
+cp /home/readme /home/work/original
+cd /home/work
+pwd
+ls -l
+\end{lstlisting}
+
+You can now edit or transform your copy without changing the supplied readme. When you are finished, inspect the directory before removing it:
+
+\begin{lstlisting}
+ls -la
+rm original
+cd /
+rmdir /home/work
+\end{lstlisting}
+
+If you have created other files in \path{/home/work}, remove or move them before running \cmd{rmdir}. This workflow is deliberately explicit: Breadbox gives you direct file operations, so it is worth checking what is in a directory before deleting it.
+
+\section{Where to go next}
+
+The shell chapter explains the command syntax, redirection, and pipelines used in these examples. \Cref{ch:storage} explains how filesystems are attached to the directory tree and what each storage type supports. \Cref{ch:processes} describes how programs use file descriptors and how their working directories fit into process state. For the on-disk representation of directories, inodes, and data blocks, continue to the filesystem implementation chapter.
