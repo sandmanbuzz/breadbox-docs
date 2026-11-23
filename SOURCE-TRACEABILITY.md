@@ -51,6 +51,22 @@ A source file is evidence of implementation, not by itself evidence of correct b
 | RUN/STOP interrupts the foreground job | `src/kernel/proc.s`, `tests/test_system.py::Boot.test_13_ctrl_c_blocked_reader`, related foreground Ctrl-C tests | IRQ path and system-test coverage. |
 
 
+
+## Chapter: Disks and Storage
+
+| Manual claim | Product-repository evidence | Basis / qualification |
+|---|---|---|
+| Device roles: boot drive 8, REU RAM disk, drives 9–11; mount table has four entries including /tmp | `src/kernel/blk.s`, `src/kernel/k.inc`, `src/kernel/fs.s`, `src/bin/mount.s`, `docs/filesystem.md` | Implementation and product documentation. Internal device indices differ from user-facing drive numbers. |
+| Mount attaches a device at an existing directory; unmount refuses busy volumes | `src/bin/mount.s`, `src/bin/umount.s`, `src/kernel/fs.s`, `src/kernel/file.s`, `docs/filesystem.md` | Command interface and kernel implementation. Busy includes open files and a process cwd on the mounted device. |
+| c64fs and CBM DOS are distinct supported volume types | `src/kernel/fs.s`, `src/mod/cbm.s`, `src/kernel/blk.s`, `docs/filesystem.md` | Implementation. c64fs supports directories and executable files; CBM DOS is a flat directory and is not executable storage. |
+| Formatting is destructive; only drives 9–11; default c64fs; drive 8 and mounted disks are refused | `src/bin/format.s`, `src/kernel/fs.s`, `docs/filesystem.md` | Command implementation and product documentation. Real-drive duration is documented observation, not a universal timing guarantee. |
+| REU /tmp is volatile and boot initializes it; REU can separately cache boot-disk blocks | `src/kernel/blk.s`, `src/kernel/fs.s`, `src/kernel/k.inc`, `docs/filesystem.md` | Implementation. Cache requires at least four REU banks in the configured build; REU root-image boot is a separate configuration and not covered as an ordinary /tmp setup here. |
+| eject/reattach allows single-drive disk swapping with a sufficient REU cache | `src/bin/eject.s`, `src/bin/reattach.s`, `src/kernel/blk.s`, `src/kernel/fs.s`, `docs/filesystem.md` | Implementation and product documentation. Reattach checks the CBM label and c64fs build identifier; writes under / wait while the boot disk is ejected. |
+| 1581 support is for c64fs volumes, not ordinary CBM DOS disks | `src/mod/d81.s`, `src/mod/cbm.s`, `src/bin/format.s`, `docs/filesystem.md` | Implementation. Module must be loaded before mounting/formatting; unload is refused while a volume uses its geometry. |
+| Host-side mkimage workflows build, inspect, upgrade, and create D81 images | `tools/mkimage.py`, `docs/filesystem.md`, `Makefile` | Host-tool implementation and product documentation. Format-1 images can be inspected but current kernel mounts format 2; upgrading without a replacement boot program preserves an incompatible old boot file. |
+| c64fs limits: 35,840-byte files, 127 inodes available to files/directories, 683/3200/2048 blocks, 14-character names, 47-character cwd path, 24 system open files, 8 per process | `src/kernel/fs.s`, `src/kernel/k.inc`, `src/kernel/file.s`, `src/kernel/proc.s`, `docs/filesystem.md` | Implementation constants and product documentation. REU block count is capacity/configuration dependent up to 2048. |
+| UCI / Ultimate host storage is not presented as a generally available disk workflow in this chapter | `src/mod/uci.s`, `src/bin/mount.s`, `docs/design/next/uci-v1.md` | Deliberate exclusion: source labels UCI v1 throwaway/development-only. Revisit only when its status changes. |
+
 ## Review notes
 
 - Re-check the product revision before publishing a release of the manual. This ledger records the revision used during drafting, not a permanent promise about future source.
