@@ -12,7 +12,7 @@ Breadbox numbers its block devices internally. In ordinary use, you work with dr
 \begin{center}
 \begin{tabular}{lll}
 \textbf{Device} & \textbf{What it represents} & \textbf{Usual place}\\
-0 & Boot disk in drive 8 & \path{/}\\
+0 & Boot disk in the current device (usually drive 8) & \path{/}\\
 1 & REU RAM disk, when available & \path{/tmp}\\
 2 & Drive 9 & Chosen mount point\\
 3 & Drive 10 & Chosen mount point\\
@@ -20,7 +20,7 @@ Breadbox numbers its block devices internally. In ordinary use, you work with dr
 \end{tabular}
 \end{center}
 
-The boot disk is mounted at \path{/} automatically. With a supported REU, Breadbox normally provides a temporary filesystem at \path{/tmp}. Drives 9, 10, and 11 can hold additional disks. The mount table has room for four active mounts in total, including \path{/tmp}.
+The boot disk is the disk in the current device selected by the DOS bootstrap loader. That is usually drive 8, by convention, but it is not fixed: the boot disk can be in another supported drive. Breadbox mounts that disk at \path{/} automatically. With a supported REU, Breadbox normally provides a temporary filesystem at \path{/tmp}. Drives 9, 10, and 11 can hold additional disks. The mount table has room for four active mounts in total, including \path{/tmp}.
 
 Use \cmd{mount} without arguments to see the current arrangement:
 
@@ -86,7 +86,7 @@ format 9 c64fs work
 The default is c64fs, and the default disk name is \path{breadbin}. Choose \path{cbm} for a normal C64 exchange disk or \path{c64fs} for a Breadbox disk. Formatting erases the disk. Breadbox asks for confirmation before proceeding.
 
 \begin{quote}
-\textbf{Destructive operation.} Check the drive number and disk before answering the confirmation prompt. The command refuses to format drive 8, which holds the running system, and refuses a disk that is currently mounted.
+\textbf{Destructive operation.} Check the drive number and disk before answering the confirmation prompt. The command refuses to format the current boot device, which holds the running system, and refuses a disk that is currently mounted.
 \end{quote}
 
 Formatting first asks the drive's own DOS to lay down the sector headers. For a CBM disk, that is the whole operation. For c64fs, Breadbox then writes its superblock, allocation bitmap, inode table, and empty root directory, and marks the disk's sectors allocated in the CBM BAM.
@@ -107,16 +107,16 @@ The REU may also hold a cache of the boot disk's blocks. This is a separate role
 
 \section{Using one drive for two disks}
 
-A single-drive system can temporarily use drive 8 for another disk if it has an REU large enough for the boot-disk block cache. The \cmd{eject} command first reads the blocks used by the boot filesystem into that cache. The boot disk can then be removed, and another disk mounted from drive 8:
+A single-drive system can temporarily use the current boot device for another disk if it has an REU large enough for the boot-disk block cache. The \cmd{eject} command first reads the blocks used by the boot filesystem into that cache. The boot disk can then be removed, and another disk mounted from the same drive. The examples below use drive 8, the usual boot device; substitute the actual current boot device if it is different:
 
 \begin{lstlisting}
 eject
 mount 8 /mnt
 \end{lstlisting}
 
-While the boot disk is out, reads from \path{/} are served by the REU cache. Operations that would modify \path{/} wait for the boot disk to return; they do not silently write to the temporary disk now in drive 8. Other mounts and the \path{/tmp} RAM disk are unaffected.
+While the boot disk is out, reads from \path{/} are served by the REU cache. Operations that would modify \path{/} wait for the boot disk to return; they do not silently write to the temporary disk now in the drive. Other mounts and the \path{/tmp} RAM disk are unaffected.
 
-When finished with the second disk, leave and unmount it, put the original boot disk back in drive 8, and reattach it:
+When finished with the second disk, leave and unmount it before physically removing it. Then put the original boot disk back in the same drive and reattach it:
 
 \begin{lstlisting}
 cd /
@@ -124,9 +124,9 @@ umount /mnt
 reattach
 \end{lstlisting}
 
-Reattachment checks that the disk in the drive is the one that was ejected, using its CBM disk label and Breadbox build identifier. It also refuses while another mount still uses drive 8.
+Do not rely on the reattachment check to identify media uniquely. Disk labels and Breadbox build identifiers are not guaranteed to distinguish the original boot disk from another disk. More importantly, Breadbox cannot protect a mounted volume if you remove its disk without unmounting it first: pending or subsequent writes can go to the replacement disk and corrupt it. Always unmount the temporary disk before swapping it out, and treat the physical disk swap as a manual operation that must follow the sequence above.
 
-This workflow requires an REU with at least four banks for the cache. With no REU, or with too little REU memory, \cmd{eject} cannot make drive 8 available. The command is root-only. Its support module is loaded on demand and remains resident once loaded.
+This workflow requires an REU with at least four banks for the cache. With no REU, or with too little REU memory, \cmd{eject} cannot make the boot device available. The command is root-only. Its support module is loaded on demand and remains resident once loaded.
 
 \section{1581 disks}
 
