@@ -185,7 +185,7 @@ message: .byte "hello", 13, 0
 buffer:  .res 256
 \end{lstlisting}
 
-The assembler understands decimal, hexadecimal (\\cmd{\\$hex}), binary (\\cmd{\\%binary}), and character literals; expressions use labels, the current program counter (\cmd{*}), addition, and subtraction. The directives most often needed in a small program are \cmd{.byte}, \cmd{.word}, and \cmd{.res}. A trailing \cmd{.res} reserves the program's BSS: it contributes to the memory the loader allocates, not bytes that must be stored in the executable file. This is especially useful for buffers.
+The assembler understands decimal, hexadecimal (\cmd{\$hex}), binary (\cmd{\%binary}), and character literals; expressions use labels, the current program counter (\cmd{*}), addition, and subtraction. The directives most often needed in a small program are \cmd{.byte}, \cmd{.word}, and \cmd{.res}. A trailing \cmd{.res} reserves the program's BSS: it contributes to the memory the loader allocates, not bytes that must be stored in the executable file. This is especially useful for buffers.
 
 The assembler holds at most 255 symbols, limits the output image to 8 KB, and keeps at most 14 characters of each symbol name. Its instruction and expression syntax is the one implemented by Breadbox's assembler—not a claim of complete compatibility with every 6502 assembler dialect. The system names for syscalls, registers, argument vectors, and open flags are predefined by the supplied include definitions; consult the programming chapters when writing a program that calls the kernel directly.
 
