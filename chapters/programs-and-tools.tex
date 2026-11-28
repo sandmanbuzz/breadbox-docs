@@ -1,3 +1,290 @@
-\chapter{Programs and Tools}
-\label{ch:tools}
-\todo{Introduce editor, assembler, BASIC, diagnostic tools, modules, and the host-side development toolchain.}
+\\chapter{Programs and Tools}
+\\label{ch:tools}
+
+The shell gives you a way to name programs, pass arguments, connect their input and output, and combine them into larger jobs. This chapter turns to the programs themselves: the tools that make Breadbox useful once the prompt is familiar.
+
+Breadbox follows a deliberately simple model. Most commands are separate executable files in \\path{/bin}. The shell loads one, passes it an argument vector, and connects its standard input and output. A few operations are shell built-ins because they must change the shell itself or must remain available when the process table is full. The distinction matters when you use pipelines and redirection; \\Cref{ch:shell} explains the shell side of that boundary.
+
+This chapter is a field guide and a grouped command reference. It concentrates on what each family is for, the invocations worth remembering, and the limits that affect real work. It does not repeat the filesystem, storage, or process tutorials: those chapters explain the underlying operations in depth.
+
+\\section{Finding the programs that are installed}
+
+Start with the command summary and the executable directory:
+
+\\begin{lstlisting}
+help
+ls /bin
+\\end{lstlisting}
+
+\\cmd{help} displays the text file \\path{/etc/help}. It is a compact, hand-maintained summary of command families and shell notation, not a complete catalogue of every executable in the current image. For the actual installed program names, inspect \\path{/bin}. This distinction is useful when comparing builds: the help file can lag behind the programs shipped in an image.
+
+The command name is normally enough. For example, \\cmd{grep} resolves to \\path{/bin/grep}. A name containing a slash is treated as a path, so \\cmd{/bin/grep} invokes the same program explicitly. The shell does not supply a universal set of options: each program defines its own arguments and reports its own usage when they are invalid.
+
+\\begin{remember}
+A command is not automatically a shell feature just because it is typed at the prompt. The shell understands operators such as \\path{|}, \\path{>}, and \\path{&}; programs such as \\cmd{grep}, \\cmd{sort}, and \\cmd{edit} do the work.
+\\end{remember}
+
+\\section{A working vocabulary: files and directories}
+
+The everyday file commands are intentionally small. They are easiest to learn as a group:
+
+\\begin{description}
+  \\item[\\cmd{pwd}] Print the current working directory.
+  \\item[\\cmd{ls} \\textit{[options] [path...]}] List directory entries. \\cmd{-l} requests the long listing and \\cmd{-a} includes names beginning with a dot.
+  \\item[\\cmd{cat} \\textit{[file...]}] Copy files to standard output; with no file operand, read standard input.
+  \\item[\\cmd{cp} \\textit{source destination}] Copy a file. A destination that names a directory receives the source file inside it.
+  \\item[\\cmd{mv} \\textit{source destination}] Rename or move a file or directory; a directory destination receives the source inside it.
+  \\item[\\cmd{rm} \\textit{file...}] Remove directory entries for files.
+  \\item[\\cmd{mkdir} \\textit{directory...}] Create directories.
+  \\item[\\cmd{rmdir} \\textit{directory...}] Remove empty directories.
+  \\item[\\cmd{touch} \\textit{file...}] Create files that do not exist. Existing files are left alone; Breadbox does not use this command to update timestamps.
+  \\item[\\cmd{stat} \\textit{file...}] Show inode and file metadata.
+\\end{description}
+
+These commands work on paths, not on a special drive-letter namespace. The current directory, absolute and relative paths, directory creation, copying, renaming, and deletion are covered in \\Cref{ch:files}. The important practical distinction is that \\cmd{rm} removes files while \\cmd{rmdir} removes only empty directories; neither is a recursive tree-removal command.
+
+\\section{Text tools: small programs that compose}
+
+Breadbox includes a useful set of text filters. A filter reads bytes from standard input or a named file and writes its result to standard output. Because the programs share that convention, the shell can combine them without knowing anything about their internal formats.
+
+\\subsection{Producing and inspecting text}
+
+\\begin{description}
+  \\item[\\cmd{echo} \\textit{[text...]}] Print its arguments, separated by spaces.
+  \\item[\\cmd{head} \\textit{[-N] [file]}] Print the first ten lines by default, or the first \\textit{N} lines when given a count such as \\cmd{-5}.
+  \\item[\\cmd{tail} \\textit{[-N] [file]}] Print the last ten lines by default, or the last \\textit{N} lines with a count such as \\cmd{-5}.
+  \\item[\\cmd{more} \\textit{[file]}] Display text a page at a time. Press RETURN for the next page or \\cmd{q} to stop.
+  \\item[\\cmd{hexdump} \\textit{[file]}] Display bytes in hexadecimal and an accompanying character view, eight bytes per line.
+  \\item[\\cmd{wc} \\textit{[file...]}] Count lines, words, and bytes. With no file operands, count standard input.
+\\end{description}
+
+\\cmd{head} is useful for checking the beginning of a file or the first output from a pipeline. \\cmd{tail} is useful for inspecting its end. There is one important implementation limit: \\cmd{tail} keeps at most the last 2 KB of input. For a seekable file it can start near the end; for a pipe it must read the stream through its ring buffer. If the requested lines extend farther back than the retained bytes, they are not available to print.
+
+\\subsection{Selecting and transforming lines}
+
+\\begin{description}
+  \\item[\\cmd{grep} \\textit{[-v] [-c] pattern [file]}] Print lines containing \\textit{pattern}. \\cmd{-v} selects lines that do not contain it; \\cmd{-c} prints the count of matching lines instead of the lines.
+  \\item[\\cmd{cut} \\textit{-c LIST | -f LIST [-d C] [file]}] Select character positions with \\cmd{-c}, or delimiter-separated fields with \\cmd{-f}. Lists are one-based and may contain individual positions and ranges, such as \\cmd{1,3-5,8-}. Field mode uses TAB by default; \\cmd{-d C} selects another single-character delimiter.
+  \\item[\\cmd{sort} \\textit{[-r] [file]}] Sort lines; \\cmd{-r} reverses the order.
+  \\item[\\cmd{uniq} \\textit{[-c] [-d] [-u] [file]}] Collapse adjacent runs of equal lines. \\cmd{-c} prefixes the retained line with its count, \\cmd{-d} prints only repeated lines, and \\cmd{-u} prints only lines that occur once.
+  \\item[\\cmd{tee} \\textit{[-a] file...}] Copy standard input to standard output and to one or more files. \\cmd{-a} appends instead of replacing the destination files.
+\\end{description}
+
+A few constraints are worth knowing before building a large pipeline. \\cmd{cut} and \\cmd{uniq} accept lines up to 255 bytes. \\cmd{sort} holds its input in memory and is limited to 8 KB of text and 255 lines; it is not an external merge sort for arbitrarily large files. \\cmd{uniq} compares adjacent lines only, so sort first when you want equal lines gathered together.
+
+\\begin{trythis}[Build a report]
+The following pipeline selects matching help entries, removes repeated adjacent lines, and counts the result:
+
+\\begin{lstlisting}
+cat /etc/help | grep system | sort | uniq | wc
+\\end{lstlisting}
+
+Try changing the search word, or add \\cmd{tee /home/report} before \\cmd{wc} to keep a copy of the intermediate text while it continues down the pipeline. The shell chapter explains the pipe and redirection operators; this example is about choosing programs whose input and output conventions fit together.
+\\end{trythis}
+
+\\section{Inspecting the running machine}
+
+These commands answer different diagnostic questions. They are useful precisely because they report live state rather than fixed information:
+
+\\begin{description}
+  \\item[\\cmd{ps}] List processes and their process IDs. Use the PID with \\cmd{kill} when a process must be signalled by name of its numeric identity.
+  \\item[\\cmd{free}] Report available and used memory.
+  \\item[\\cmd{df}] Report filesystem capacity and free space.
+  \\item[\\cmd{uptime}] Show time since boot and the number of processes.
+  \\item[\\cmd{date} \\textit{[hh:mm[:ss]]}] Display the time-of-day clock, or set it when a time is supplied.
+  \\item[\\cmd{uname}] Print the system name.
+  \\item[\\cmd{version}] Print the Breadbox version.
+  \\item[\\cmd{sleep} \\textit{seconds}] Wait for the requested number of seconds.
+  \\item[\\cmd{clear}] Clear the display.
+  \\item[\\cmd{count}] Print an increasing count once per second, indefinitely; stop it with RUN/STOP or \\cmd{kill} if it is running in the background.
+\\end{description}
+
+For process control, remember that \\cmd{jobs} is a shell built-in and reports background children known to that shell, while \\cmd{ps} reports the system process table. \\cmd{kill} is available both as a shell built-in and as an external program; its general form is \\cmd{kill [-signal] pid...}. The built-in can still send a signal when there is no free process slot to start another executable. See \\Cref{ch:processes} for process states, signals, and the shared process limit.
+
+\\section{The console and the interactive tools}
+
+Not every useful program is a filter. Some take over the screen or read keys directly.
+
+\\subsection{The full-screen editor}
+
+Run \\cmd{edit} with an optional file name:
+
+\\begin{lstlisting}
+edit /home/notes.txt
+\\end{lstlisting}
+
+With a file name, the editor loads that file; without one, it starts with an empty buffer. The editor is a full-screen text editor, not a line-oriented shell command. On the standard 40-column console it uses 24 rows for text and the bottom row for status. Its in-memory text buffer is limited to 12 KB; a larger file is refused rather than silently truncated.
+
+The main controls are:
+
+\\begin{description}
+  \\item[Cursor keys] Move through the text; HOME moves to the start of the line.
+  \\item[DEL] Delete the character before the cursor.
+  \\item[RETURN] Insert a newline.
+  \\item[CTRL-O or F1] Save the file.
+  \\item[CTRL-X or F7] Quit. If there are unsaved changes, confirm by pressing the quit key again.
+  \\item[CTRL-K] Delete the current line.
+  \\item[CTRL-L or CLR] Redraw the screen.
+\\end{description}
+
+The shell's DEL key behavior is different: at the prompt it backspaces at the end of the command line. Inside \\cmd{edit}, the cursor can move and DEL acts at that cursor position. Do not assume the shell's line editor and the full-screen editor have identical controls.
+
+\\subsection{Games and display settings}
+
+\\cmd{chess} and \\cmd{tetris} are interactive programs rather than text filters. They are useful examples of applications that use the console directly.
+
+\\cmd{theme} displays or changes the screen colour theme. A selected theme is saved in \\path{/etc/theme} and applied during boot, so it is a system setting rather than a one-session decoration.
+
+\\cmd{turbo} displays or changes the CPU speed on a Commodore 64 Ultimate. Its forms are \\cmd{turbo}, \\cmd{turbo off}, \\cmd{turbo max}, or \\cmd{turbo N} for a speed index. It depends on the Ultimate's Turbo Registers feature; on a machine without that interface, there is no CPU speed control to use. It does not change the speed of an ordinary stock C64.
+
+\\section{Arithmetic and programming on the C64}
+
+\\subsection{The calculator}
+
+\\cmd{calc} evaluates a 16-bit signed integer expression:
+
+\\begin{lstlisting}
+calc 2+3*4
+echo '7*(2-5)' | calc
+\\end{lstlisting}
+
+Arguments are joined into one expression. With no arguments, \\cmd{calc} reads one expression per line from standard input, making it usable in a pipeline. It supports addition, subtraction, multiplication, division, remainder, unary minus, and parentheses. Division truncates toward zero; the remainder follows the sign of the dividend. Values are limited to the signed 16-bit range, and expression nesting is limited to six levels. A bad expression is reported on standard error; if any input line fails, the program exits with status 1.
+
+\\subsection{The on-machine BASIC}
+
+Run \\cmd{basic} by itself for an interactive session, or give it a BASIC source file:
+
+\\begin{lstlisting}
+basic
+basic /home/demo.bas
+cat /home/demo.bas | basic
+\\end{lstlisting}
+
+In interactive mode, numbered lines are stored as a program. The current interpreter provides integer variables \\cmd{a} through \\cmd{z}, each a signed 16-bit value. Its statements include \\cmd{PRINT} (also \\cmd{?}), \\cmd{INPUT}, \\cmd{LET}, \\cmd{IF...THEN}, \\cmd{GOTO}, \\cmd{GOSUB}, \\cmd{RETURN}, \\cmd{FOR...TO...STEP}, \\cmd{NEXT}, \\cmd{END}, and \\cmd{REM}. The program commands include \\cmd{LIST}, \\cmd{RUN}, \\cmd{NEW}, \\cmd{LOAD}, \\cmd{SAVE}, and \\cmd{BYE}. The expression operators are arithmetic and comparisons, with parentheses; the built-in functions are \\cmd{RND(n)} and \\cmd{ABS(n)}.
+
+The implementation is intentionally small. It is useful for short integer programs and demonstrations, but should not be mistaken for a promise of compatibility with Commodore BASIC 2.0 or with arbitrary BASIC listings. Its input and output use the standard streams, which is why a program can also be supplied through a pipe. The current program and its limits are described here; future BASIC work should be documented when its user-facing milestone is established.
+
+\\subsection{The on-machine assembler}
+
+The \\cmd{as} command is a two-pass 6502 assembler that runs on Breadbox. Its basic form is:
+
+\\begin{lstlisting}
+as source.s program
+\\end{lstlisting}
+
+The first operand is assembly source; the second is the name of the executable to create. The assembler reads source from a file and writes a relocatable Breadbox executable, which can then be invoked like another command.
+
+The source language is case-insensitive. It supports labels, assignments, comments, byte and word data, reserved storage, and the usual 6502 addressing forms. For example:
+
+\\begin{lstlisting}
+        lda #<message
+        ldx #>message
+        jsr SYS_WRITE
+
+message: .byte "hello", 13, 0
+buffer:  .res 256
+\\end{lstlisting}
+
+The assembler understands decimal, hexadecimal (\\cmd{$hex}), binary (\\cmd{%binary}), and character literals; expressions use labels, the current program counter (\\cmd{*}), addition, and subtraction. The directives most often needed in a small program are \\cmd{.byte}, \\cmd{.word}, and \\cmd{.res}. A trailing \\cmd{.res} reserves the program's BSS: it contributes to the memory the loader allocates, not bytes that must be stored in the executable file. This is especially useful for buffers.
+
+The assembler has finite symbol and output limits, and its instruction and expression syntax is the one implemented by Breadbox's assembler—not a claim of complete compatibility with every 6502 assembler dialect. The system names for syscalls, registers, argument vectors, and open flags are predefined by the supplied include definitions; consult the programming chapters when writing a program that calls the kernel directly.
+
+\\section{Accounts and identity}
+
+A system may boot straight into a shell, or use the login program when an account database is installed. The account commands are:
+
+\\begin{description}
+  \\item[\\cmd{login}] Prompt for a user name and, when configured, a password; then start that user's shell.
+  \\item[\\cmd{whoami}] Print the user name associated with the current user ID.
+  \\item[\\cmd{passwd} \\textit{[user]}] Change a password. Root may change another user's password; an ordinary user changes their own.
+\\end{description}
+
+The account database and login configuration determine whether a particular image uses this path. A command being present in \\path{/bin} does not by itself mean that the system is configured to require login. The startup path is described in \\Cref{ch:first-session} and the kernel and process chapters.
+
+\\section{Storage controls and kernel modules}
+
+The storage chapter explains how to mount, unmount, format, and exchange disks. The command names are gathered here so that they are easy to find:
+
+\\begin{description}
+  \\item[\\cmd{mount} \\textit{[drive directory]}] List mounted volumes, or mount a drive on a directory. \\cmd{mount uci /u} mounts the Ultimate's file storage at \\path{/u}.
+  \\item[\\cmd{umount} \\textit{directory}] Detach a mounted volume.
+  \\item[\\cmd{format} \\textit{drive [cbm|c64fs] [name]}] Destructively format a disk in a supported secondary drive.
+  \\item[\\cmd{eject}] Prepare the boot disk for removal in a single-drive setup with a suitable REU block cache.
+  \\item[\\cmd{reattach}] Reconnect the boot disk after it has been returned to the drive.
+  \\item[\\cmd{cache} \\textit{[stat|off|on|flush]}] Inspect or control the REU block cache for the boot drive.
+\\end{description}
+
+\\cmd{cache stat} reports cache state and counters. \\cmd{cache off} bypasses cached reads while writes continue to keep the cache coherent; \\cmd{cache on} enables it again; \\cmd{cache flush} discards its contents. These commands concern the boot-drive block cache, not the contents of the REU filesystem at \\path{/tmp}.
+
+The Ultimate's file storage is a current user-facing feature when the C64 Ultimate's Command Interface is enabled. The invocation \\cmd{mount uci /u} makes the Ultimate's file tree available below \\path{/u}; ordinary Breadbox file operations then work through that mount. UCI v1 supports directories, long names, large files, and executable files. It is a file-storage interface, not a general network facility: networking is not part of this version's contract. Unmount it with \\cmd{umount /u} when finished.
+
+Kernel modules extend the running system without making every optional driver permanently resident. The \\cmd{mod} command lists, loads, and unloads them:
+
+\\begin{lstlisting}
+mod ls
+mod load /lib/km/con80
+mod ls
+\\end{lstlisting}
+
+\\cmd{mod ls} lists loaded modules and their slots. Loading and unloading are restricted to root. The general form is \\cmd{mod load PATH}; unloading uses the slot reported by \\cmd{mod ls}, as in \\cmd{mod unload SLOT}. Some modules are managed by the command that needs them: for example, mounting UCI loads its module and unmounting the filesystem releases it. Do not manually unload a module while a mounted volume or active subsystem depends on it.
+
+\\subsection{Optional 80-column console}
+
+The \\cmd{con80} module provides an 80-column by 25-row console. The standard console remains 40 columns unless the module is loaded. It uses a high-resolution bitmap display and consumes a substantial block of memory; loading can fail if the pages it needs are already occupied. Unload it to restore the standard 40-column console:
+
+\\begin{lstlisting}
+mod load /lib/km/con80
+mod ls
+mod unload SLOT
+\\end{lstlisting}
+
+Replace \\cmd{SLOT} with the slot shown by \\cmd{mod ls}. On a stock 1 MHz C64, scrolling in the 80-column display is noticeably slower than the normal text console. The module does not require an REU or an Ultimate.
+
+\\subsection{Optional drive and filesystem modules}
+
+The module directory \\path{/lib/km} contains optional drivers and extensions. The \\cmd{d81} module enables c64fs volumes on 1581 media; it does not make ordinary CBM DOS 1581 disks mountable as c64fs. The \\cmd{fast} module provides a drive-side block-transfer path for c64fs on a stock 1541. It requires a kernel built with JiffyDOS byte routines (\\cmd{JIFFY=1}); CBM DOS volumes continue to use their ordinary path. Its speed evidence is from emulation, so do not treat the measured improvement as a hardware guarantee. The \\cmd{cbm} filesystem support is also packaged as a module and is used when a normal C64 DOS disk is mounted.
+
+Module names and requirements can change as the product evolves. Use \\cmd{mod ls} to inspect what is actually loaded, and consult the storage and hardware chapters for the platform-specific consequences of each driver.
+
+\\section{Host-side development tools}
+
+Some of the development workflow happens on the computer used to build the Breadbox disk, not on the C64. These tools are not commands installed in \\path{/bin}; they are scripts in the product source tree.
+
+The most approachable example is the small C-subset compiler, \\path{tools/cc.py}. It translates a restricted C-like language into source for the on-machine assembler:
+
+\\begin{lstlisting}
+python3 tools/cc.py hello.c > hello.s
+\\end{lstlisting}
+
+Copy \\path{hello.s} to a Breadbox filesystem, then assemble it on the C64:
+
+\\begin{lstlisting}
+as hello.s hello
+hello
+\\end{lstlisting}
+
+The native-code backend is deliberately limited: it supports a small integer-and-pointer language, functions, local variables, arrays, conditionals, loops, and calls, but not general C. In particular, native code does not support recursion because its local and parameter storage is static. It is a compact reference compiler, not a standards-compliant C implementation.
+
+The \\cmd{--pcode} backend targets the Breadbox p-code virtual machine instead:
+
+\\begin{lstlisting}
+python3 tools/cc.py --pcode hello.c > hello.s
+\\end{lstlisting}
+
+That path uses the shared \\path{/lib/pvm} runtime and the host-side linker \\path{tools/pvmlink.py}; it supports real recursion and a broader set of language features than the native backend. Building a p-code program requires the host assembler/linking steps documented with the programming material. The two backends are not interchangeable in every detail, so check which one a project expects before compiling.
+
+Other host-side tools support image construction and inspection. \\path{tools/mkimage.py} builds c64fs images from directories and can inspect their contents; its disk-image workflows are covered in \\Cref{ch:storage}. \\path{tools/cx.py} packages linked binaries into Breadbox's relocatable executable format and is normally part of the build process rather than a tool a user invokes on the C64. The repository's \\path{Makefile} ties these stages together.
+
+\\section{Choosing the right tool}
+
+A useful way to approach an unfamiliar task is to identify the kind of work before choosing a command:
+
+\\begin{itemize}
+  \\item To inspect or change a file tree, start with \\cmd{ls}, \\cmd{stat}, \\cmd{cat}, and the file operations in \\Cref{ch:files}.
+  \\item To inspect or transform text, use \\cmd{grep}, \\cmd{cut}, \\cmd{sort}, \\cmd{uniq}, \\cmd{head}, \\cmd{tail}, and \\cmd{wc}. Connect them with pipes instead of writing intermediate files unless you need to keep the result.
+  \\item To understand a running system, compare \\cmd{ps}, \\cmd{free}, \\cmd{df}, and \\cmd{uptime}; each describes a different resource.
+  \\item To edit or create software on the machine, use \\cmd{edit}, \\cmd{basic}, or \\cmd{as}, depending on the language and task.
+  \\item To add hardware or filesystem capability, inspect the available modules and their requirements before loading one.
+\\end{itemize}
+
+When a command fails, separate the layers. Did the shell parse the line as intended? Did it find and start the program? Did the program accept the arguments? Did the filesystem, device, or kernel operation then succeed? That sequence connects this chapter back to the shell, files, storage, and process chapters—and gives you a disciplined way to diagnose the failure rather than treating every error as a shell problem.
