@@ -90,7 +90,7 @@ These commands answer different diagnostic questions. They are useful precisely 
   \item[\cmd{ps}] List processes and their process IDs. Use the PID with \cmd{kill} when a process must be signalled by name of its numeric identity.
   \item[\cmd{exec} \textit{PATH [ARGS...]}] Replace the current process with another program. The new program keeps the same PID, open descriptors, and working directory; \cmd{exec} returns only if the replacement fails.
   \item[\cmd{free}] Report available and used memory.
-  \item[\cmd{df}] Report free space on the root filesystem and \\path{/tmp}.
+  \item[\cmd{df}] Report free space on the root filesystem and \path{/tmp}.
   \item[\cmd{uptime}] Show time since boot and the number of processes.
   \item[\cmd{date} \textit{[hh:mm[:ss]]}] Display the time-of-day clock, or set it when a time is supplied.
   \item[\cmd{uname}] Print the system name.
@@ -243,7 +243,7 @@ Replace \cmd{SLOT} with the slot shown by \cmd{mod ls}. On a stock 1 MHz C64, sc
 
 \subsection{Optional drive and filesystem modules}
 
-The module directory \path{/lib/km} contains optional drivers and extensions. The \cmd{d81} module enables c64fs volumes on 1581 media; it does not make ordinary CBM DOS 1581 disks mountable as c64fs. The \cmd{fast} module provides a drive-side block-transfer path for c64fs on a stock 1541. It requires a kernel built with JiffyDOS byte routines (\cmd{JIFFY=1}); CBM DOS volumes continue to use their ordinary path. Its speed evidence is from emulation, so do not treat the measured improvement as a hardware guarantee. The \cmd{cbm} filesystem support is also packaged as a module and is used when a normal C64 DOS disk is mounted.
+The module directory \path{/lib/km} contains optional drivers and extensions. The \cmd{d81} module enables c64fs volumes on 1581 media; it does not make ordinary CBM DOS 1581 disks mountable as c64fs. The \cmd{fast} module provides a drive-side block-transfer path for c64fs on a stock 1541. On a build that includes it, load it with \cmd{mod load /lib/km/fast}. It requires a kernel built with JiffyDOS byte routines (\cmd{JIFFY=1}); CBM DOS volumes continue to use their ordinary path. Its speed evidence is from emulation, so do not treat the measured improvement as a hardware guarantee. The \cmd{cbm} filesystem support is also packaged as a module and is used when a normal C64 DOS disk is mounted.
 
 Module names and requirements can change as the product evolves. Use \cmd{mod ls} to inspect what is actually loaded, and consult the storage and hardware chapters for the platform-specific consequences of each driver.
 
