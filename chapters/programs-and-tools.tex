@@ -148,7 +148,7 @@ calc 2+3*4
 echo '7*(2-5)' | calc
 \end{lstlisting}
 
-Arguments are joined into one expression. With no arguments, \cmd{calc} reads one expression per line from standard input, making it usable in a pipeline. It supports addition, subtraction, multiplication, division, remainder, unary minus, and parentheses. Division truncates toward zero; the remainder follows the sign of the dividend. Values are limited to the signed 16-bit range, and expression nesting is limited to six levels. A bad expression is reported on standard error; if any input line fails, the program exits with status 1.
+Arguments are joined into one expression. With no arguments, \cmd{calc} reads one expression per line from standard input, making it usable in a pipeline. It supports addition, subtraction, multiplication, division, remainder, unary minus, and parentheses. Division truncates toward zero; the remainder follows the sign of the dividend. Values are limited to the signed 16-bit range; because positive literals stop at 32767, the value -32768 cannot be written as a literal in this implementation. Expression nesting is limited to six levels. A bad expression is reported on standard error; if any input line fails, the program exits with status 1.
 
 \subsection{The on-machine BASIC}
 
@@ -162,7 +162,7 @@ cat /home/demo.bas | basic
 
 In interactive mode, numbered lines are stored as a program. The current interpreter provides integer variables \cmd{a} through \cmd{z}, each a signed 16-bit value. Its statements include \cmd{PRINT} (also \cmd{?}), \cmd{INPUT}, \cmd{LET}, \cmd{IF...THEN}, \cmd{GOTO}, \cmd{GOSUB}, \cmd{RETURN}, \cmd{FOR...TO...STEP}, \cmd{NEXT}, \cmd{END}, and \cmd{REM}. The program commands include \cmd{LIST}, \cmd{RUN}, \cmd{NEW}, \cmd{LOAD}, \cmd{SAVE}, and \cmd{BYE}. The expression operators are arithmetic and comparisons, with parentheses; the built-in functions are \cmd{RND(n)} and \cmd{ABS(n)}.
 
-The implementation is intentionally small. It is useful for short integer programs and demonstrations, but should not be mistaken for a promise of compatibility with Commodore BASIC 2.0 or with arbitrary BASIC listings. Its input and output use the standard streams, which is why a program can also be supplied through a pipe. The current program and its limits are described here; future BASIC work should be documented when its user-facing milestone is established.
+The implementation is intentionally small. Its stored program text is limited to 8 KB, with up to 16 nested GOSUB calls and eight active FOR loops. It is useful for short integer programs and demonstrations, but should not be mistaken for a promise of compatibility with Commodore BASIC 2.0 or with arbitrary BASIC listings. Its input and output use the standard streams, which is why a program can also be supplied through a pipe. The current program and its limits are described here; future BASIC work should be documented when its user-facing milestone is established.
 
 \subsection{The on-machine assembler}
 
@@ -187,7 +187,7 @@ buffer:  .res 256
 
 The assembler understands decimal, hexadecimal (\cmd{$hex}), binary (\cmd{%binary}), and character literals; expressions use labels, the current program counter (\cmd{*}), addition, and subtraction. The directives most often needed in a small program are \cmd{.byte}, \cmd{.word}, and \cmd{.res}. A trailing \cmd{.res} reserves the program's BSS: it contributes to the memory the loader allocates, not bytes that must be stored in the executable file. This is especially useful for buffers.
 
-The assembler has finite symbol and output limits, and its instruction and expression syntax is the one implemented by Breadbox's assembler—not a claim of complete compatibility with every 6502 assembler dialect. The system names for syscalls, registers, argument vectors, and open flags are predefined by the supplied include definitions; consult the programming chapters when writing a program that calls the kernel directly.
+The assembler holds at most 255 symbols, limits the output image to 8 KB, and keeps at most 14 characters of each symbol name. Its instruction and expression syntax is the one implemented by Breadbox's assembler—not a claim of complete compatibility with every 6502 assembler dialect. The system names for syscalls, registers, argument vectors, and open flags are predefined by the supplied include definitions; consult the programming chapters when writing a program that calls the kernel directly.
 
 \section{Accounts and identity}
 
