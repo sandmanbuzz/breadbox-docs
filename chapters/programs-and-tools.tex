@@ -88,6 +88,7 @@ These commands answer different diagnostic questions. They are useful precisely 
 
 \begin{description}
   \item[\cmd{ps}] List processes and their process IDs. Use the PID with \cmd{kill} when a process must be signalled by name of its numeric identity.
+  \item[\cmd{exec} \textit{PATH [ARGS...]}] Replace the current process with another program. The new program keeps the same PID, open descriptors, and working directory; \cmd{exec} returns only if the replacement fails.
   \item[\cmd{free}] Report available and used memory.
   \item[\cmd{df}] Report filesystem capacity and free space.
   \item[\cmd{uptime}] Show time since boot and the number of processes.
