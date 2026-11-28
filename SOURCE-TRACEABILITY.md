@@ -2,8 +2,8 @@
 
 This file is an editorial working aid for the manual. It records where claims are grounded in the product repository; it is not a user-facing bibliography and does not replace implementation or hardware testing.
 
-**Product source of truth:** `sandmanbuzz/breadbin`, branch `main`.  
-**Product revision consulted for the latest Files and Directories pass:** `bb0844354bca8ab0401c0faf40918bc3115bfcc2` (2026-11-23, `test: keep p-code compile refusals active without py65`). Earlier chapter entries may refer to the prior revision; refresh them before publication.  
+**Product source of truth:** the owner's local `sandmanbuzz/breadbin` `main`; the GitHub `main` branch is a mirror, not authoritative.  
+**Product revision consulted for the Programs and Tools pass:** remote mirror `main` at `270ed1e83f6341700d25a8386912790ff212a646` (2026-11-26). The local authoritative branch was not directly inspected in this pass; refresh against it before publication. Earlier chapter entries may refer to prior revisions.  
 **Manual branch:** `c/book-foundation`.
 
 ## Evidence levels
@@ -127,3 +127,25 @@ A source file is evidence of implementation, not by itself evidence of correct b
 | `stat` reports type, size, inode, links, and device; `df` reports filesystem capacity and inode counts | `src/bin/stat.s`, `src/bin/df.s`, `src/kernel/file.s` (`sys_stat`, `sys_fsinfo`), `docs/filesystem.md` | Implementation and product filesystem documentation. |
 | c64fs has real directories; CBM DOS is a flat directory without mkdir or executable loading | `docs/filesystem.md`, `src/mod/cbm.s`, `src/kernel/fs.s`, `src/kernel/file.s` | Product documentation and backend implementation. Full disk/mount procedures belong to the storage chapter. |
 | c64fs stores no useful timestamps; file data is allocated in 256-byte blocks | `docs/filesystem.md`, `src/kernel/fs.s`, `src/kernel/blk.s` | Product filesystem documentation and implementation. |
+
+
+## Chapter: Programs and Tools
+
+| Manual claim / reference entry | Product-repository evidence | Basis / qualification |
+|---|---|---|
+| Most commands are separate executables in `/bin`; shell built-ins are distinct | `src/bin/sh.s`, `src/kernel/exec.s`, `src/bin/*.s`, program build rules in `Makefile` | Implementation. `cd`, `jobs`, `kill`, and `exit` are shell built-ins; the executable `kill` also exists. |
+| `help` is a summary file, not a complete inventory; `ls /bin` shows installed executables | `src/bin/help.s`, `rootfs/etc/help`, `src/bin/` directory, `Makefile` | Implementation and shipped image. Current `/etc/help` omits several installed commands, including `cache`, `eject`, `exec`, `mod`, `reattach`, `calc`, `cut`, and `uniq`; do not describe it as exhaustive. |
+| File commands and their syntax | `src/bin/pwd.s`, `ls.s`, `cat.s`, `cp.s`, `mv.s`, `rm.s`, `mkdir.s`, `rmdir.s`, `touch.s`, `stat.s` | Implementation. Detailed filesystem semantics are in Files and Directories. `touch` creates missing files and does not update timestamps on existing files. |
+| Text-filter synopsis and constraints | `src/bin/echo.s`, `grep.s`, `head.s`, `tail.s`, `more.s`, `wc.s`, `cut.s`, `sort.s`, `uniq.s`, `tee.s`, `hexdump.s` | Implementation. `tail` retains 2 KB; `sort` is bounded to 8 KB / 255 lines; `cut` and `uniq` line buffers are 255 bytes. |
+| Diagnostic and time commands | `src/bin/ps.s`, `free.s`, `df.s`, `uptime.s`, `date.s`, `uname.s`, `version.s`, `sleep.s`, `clear.s`, `count.s` | Implementation. Values such as process counts, memory, and free space are live state, not fixed examples. |
+| Full-screen editor controls and buffer limit | `src/bin/edit.s`, `tools/test_edit.py`, `tools/test_edit_at_end.py` | Implementation and host-side tests. 12 KB buffer; 24 text rows; status row; CTRL-O/F1 save, CTRL-X/F7 quit, CTRL-K delete line, CTRL-L/CLR redraw. |
+| Integer BASIC statements, variables, and program limits | `src/bin/basic.s`, `tools/test_bas.py`, `tools/test_bas_rt.py` | Current implementation and tests. Integer variables are signed 16-bit; program buffer is 8 KB; GOSUB stack has 16 entries and FOR stack 8. Do not imply compatibility with Commodore BASIC 2.0. |
+| On-machine assembler syntax and output | `src/bin/as.s`, `src/bin/as_ops.inc`, `tools/test_as.py`, `include/breadbin.inc` | Implementation and tests. Two-pass assembler; symbol table 255 entries, output cap 8 KB, symbol names up to 14 characters; produces relocatable CX executables. |
+| Calculator grammar and arithmetic limits | `src/bin/calc.s` | Implementation. Signed 16-bit integer arithmetic; six levels of nesting; error lines go to stderr and any error yields status 1. |
+| Account tools and identity | `src/bin/login.s`, `passwd.s`, `whoami.s`, `src/bin/init.s`, `rootfs/etc/passwd` | Implementation and shipped configuration. Login is conditional on account database/configuration. |
+| Module manager and optional modules | `src/bin/mod.s`, `src/mod/con80.s`, `src/mod/d81.s`, `src/mod/fast.s`, `src/mod/cbm.s`, `mk/modules.mk`, `tests/test_modules.py`, `tests/test_con80.py`, `tests/test_fast.py` | Implementation and tests. Module loading/unloading is root-only; individual modules have additional dependencies and active-use constraints. |
+| 80-column console behavior | `src/mod/con80.s`, `src/mod/con80.inc`, `tests/test_con80.py`, `tests/test_con80_sim.py` | Implementation and test coverage. Optional 80x25 bitmap console; requires 32 pages in the designated pool region; standard 40-column console is restored on unload. Scrolling performance is hardware-dependent. |
+| Boot-drive block cache and single-drive eject workflow | `src/bin/cache.s`, `src/bin/eject.s`, `src/bin/reattach.s`, `src/mod/eject.s`, `src/kernel/blk.s` | Implementation. The block cache and REU filesystem at `/tmp` are separate facilities. Media-swap safety caveats are documented in Disks and Storage. |
+| UCI v1 is a current user-facing Ultimate storage mount | `src/mod/uci.s`, `src/kernel/uci.s`, `src/bin/mount.s`, `tests/test_uci_sim.py`, `tests/test_ultimate.py`, `docs/hardware-notes.md` | Owner-confirmed product status plus implementation and test evidence. The source header and old design note still say “dev-only” / “nothing built”; those labels are stale and must not override the current product decision. UCI v1 requires the Ultimate Command Interface and is file storage, not networking. |
+| Host-side C subset compiler and p-code backend | `tools/cc.py`, `tools/cc_pcode.py`, `tools/pvmlink.py`, `src/pvm/`, `tools/test_cc.py`, `tools/test_cc_pcode.py` | Implementation and tests. Native backend has static locals and no recursion; p-code backend uses frames and supports recursion. Both are restricted C subsets, not standard C compilers. |
+| Host-side executable packaging | `tools/cx.py`, `src/prog.cfg`, `Makefile` | Build implementation. Normally invoked by the build rules rather than as a C64 command. |
