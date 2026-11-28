@@ -90,7 +90,7 @@ These commands answer different diagnostic questions. They are useful precisely 
   \item[\cmd{ps}] List processes and their process IDs. Use the PID with \cmd{kill} when a process must be signalled by name of its numeric identity.
   \item[\cmd{exec} \textit{PATH [ARGS...]}] Replace the current process with another program. The new program keeps the same PID, open descriptors, and working directory; \cmd{exec} returns only if the replacement fails.
   \item[\cmd{free}] Report available and used memory.
-  \item[\cmd{df}] Report filesystem capacity and free space.
+  \item[\cmd{df}] Report free space on the root filesystem and \\path{/tmp}.
   \item[\cmd{uptime}] Show time since boot and the number of processes.
   \item[\cmd{date} \textit{[hh:mm[:ss]]}] Display the time-of-day clock, or set it when a time is supplied.
   \item[\cmd{uname}] Print the system name.
@@ -114,7 +114,7 @@ Run \cmd{edit} with an optional file name:
 edit /home/notes.txt
 \end{lstlisting}
 
-With a file name, the editor loads that file; without one, it starts with an empty buffer. The editor is a full-screen text editor, not a line-oriented shell command. On the standard 40-column console it uses 24 rows for text and the bottom row for status. Its in-memory text buffer is limited to 12 KB; a larger file is refused rather than silently truncated.
+With a file name, the editor loads that file; without one, it starts with an empty buffer. The editor is a full-screen text editor, not a line-oriented shell command. On the standard 40-column console it uses 39 columns across 24 rows for text and the bottom row for status. Its in-memory text buffer is limited to 12 KB; a larger file is refused rather than silently truncated.
 
 The main controls are:
 
